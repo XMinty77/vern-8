@@ -1,0 +1,10 @@
+# Agent orientation, agent notes and reference code (kept local)
+CLAUDE.md
+notes/
+ref/
+
+# Exercises and experiments (kept local)
+playground/
+
+# Build outputs
+build/

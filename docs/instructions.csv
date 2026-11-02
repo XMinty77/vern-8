@@ -1,44 +1,44 @@
-Name,Scuffed RTL,b7,b6,b5,b4,b3,b2,b1,b0,Operands,Flag,Description
-ILA,r[3:0] = V,0,0,0,0,imm4,imm4,imm4,imm4,V (imm4),,Low immediate into A
-ILB,r[3:0] = V,0,0,1,0,imm4,imm4,imm4,imm4,V (imm4),,Low immediate into B
-IHA,r[7:4] = V,0,0,0,1,imm4,imm4,imm4,imm4,V (imm4),,High immediate into A
-IHB,r[7:4] = V,0,0,1,1,imm4,imm4,imm4,imm4,V (imm4),,High immediate into B
-ALO,AR[3:0] = V,0,1,0,0,imm4,imm4,imm4,imm4,V (imm4),,Low immediate into AR
-AHI,AR[7:4] = V,0,1,0,1,imm4,imm4,imm4,imm4,V (imm4),,High immediate into AR
-SLDA,r = M[V],0,1,1,0,imm4,imm4,imm4,imm4,V (imm4),,Simple load A
-SLDB,r = M[V],0,1,1,1,imm4,imm4,imm4,imm4,V (imm4),,Simple load B
-SSTA,M[V] = r,1,1,1,0,imm4,imm4,imm4,imm4,V (imm4),,Simple store A
-SSTB,M[V] = r,1,1,1,1,imm4,imm4,imm4,imm4,V (imm4),,Simple store B
-LDA,r = M[AR],1,1,0,1,1,1,0,0,,,Load A
-LDB,r = M[AR],1,1,0,1,1,1,0,1,,,Load B
-STA,M[AR] = r,1,1,0,1,1,1,1,0,,,Store A
-STB,M[AR] = r,1,1,0,1,1,1,1,1,,,Store B
-INVA,r = ~r,1,0,0,0,0,0,0,0,,,Invert A bits
-INVB,r = ~r,1,0,0,0,0,0,0,1,,,Invert B bits
-ADD,A = A + B,1,0,0,0,0,0,1,0,,If overflow,Add A and B
-SUB,A = A - B,1,0,0,0,0,0,1,1,,If underflow,Subtract B from A
-MUL,A = (A * B)[7:0],1,0,0,0,0,1,0,0,,If overflow,Multiply A and B
-DIV,A <= A / B; B <= A % B,1,0,0,0,0,1,0,1,,If divide by zero,"Divide A by B, remainder into B. If B = 0, A and B are unchanged"
-SWAP,A <= B; B <= A,1,0,0,0,0,1,1,0,,,Swap A and B
-INC,A = A + 1,1,0,0,0,0,1,1,1,,If overflow,Increment A
-AND,A = A & B,1,0,0,0,1,0,0,0,,,Bitwise AND
-NAND,A = ~(A & B),1,0,0,0,1,0,0,1,,,Bitwise NAND
-OR,A = A | B,1,0,0,0,1,0,1,0,,,Bitwise OR
-NOR,A = ~(A | B),1,0,0,0,1,0,1,1,,,Bitwise NOR
-XOR,A = A ^ B,1,0,0,0,1,1,0,0,,,Bitwise XOR
-XNOR,A = ~(A ^ B),1,0,0,0,1,1,0,1,,,Bitwise XNOR
-SHL,A = A << B,1,0,0,0,1,1,1,0,,,Shift A left by B bits (A = 0 if B >= 8)
-SHR,A = A >> B,1,0,0,0,1,1,1,1,,,Shift A right by B bits (A = 0 if B >= 8)
-EQ,F = (A == B),1,0,0,1,0,0,0,0,,If true,Check if equal
-NEQ,F = ~(A == B),1,0,0,1,0,0,0,1,,If true,Check if not equal
-LT,F = A < B,1,0,0,1,0,0,1,0,,If true,Check if less than
-GTE,F = A >= B,1,0,0,1,0,0,1,1,,If true,Check if greater than or equal
-GT,F = A > B,1,0,0,1,0,1,0,0,,If true,Check if greater than
-LTE,F = A <= B,1,0,0,1,0,1,0,1,,If true,Check if less than or equal
-CLF,F = 0,1,0,0,1,0,1,1,0,,0,Clear flag
-STF,F = 1,1,0,0,1,0,1,1,1,,1,Set flag
-JMP,PC = AR,1,0,0,1,1,0,0,0,,,Jump
-JF,"If F, PC = AR",1,0,0,1,1,0,0,1,,,Jump if flag
-CALL,"S0 <= PC + 1; S1 <= S0; S2 <= S1; S3 <= S2; PC <= AR; D <= min(D + 1, 4)",1,0,0,1,1,0,1,0,,,Call subroutine at AR
-RET,If D > 0: PC <= S0; S0 <= S1; S1 <= S2; S2 <= S3; S3 <= 0; D <= D - 1,1,0,0,1,1,0,1,1,,,"Return from subroutine. If the call stack is empty, only PC = PC + 1"
-TAR,AR = A,1,1,0,1,1,0,0,0,,,Transfer A to AR
+Name,Scuffed RTL,b7,b6,b5,b4,b3,b2,b1,b0,Operands,Flag,Description,Unit
+ILA,r[3:0] = V,0,0,0,0,imm4,imm4,imm4,imm4,V (imm4),,Low immediate into A,WU
+ILB,r[3:0] = V,0,0,1,0,imm4,imm4,imm4,imm4,V (imm4),,Low immediate into B,WU
+IHA,r[7:4] = V,0,0,0,1,imm4,imm4,imm4,imm4,V (imm4),,High immediate into A,WU
+IHB,r[7:4] = V,0,0,1,1,imm4,imm4,imm4,imm4,V (imm4),,High immediate into B,WU
+ALO,AR[3:0] = V,0,1,0,0,imm4,imm4,imm4,imm4,V (imm4),,Low immediate into AR,WU
+AHI,AR[7:4] = V,0,1,0,1,imm4,imm4,imm4,imm4,V (imm4),,High immediate into AR,WU
+SLDA,r = M[V],0,1,1,0,imm4,imm4,imm4,imm4,V (imm4),,Simple load A,WU
+SLDB,r = M[V],0,1,1,1,imm4,imm4,imm4,imm4,V (imm4),,Simple load B,WU
+SSTA,M[V] = r,1,1,1,0,imm4,imm4,imm4,imm4,V (imm4),,Simple store A,WU
+SSTB,M[V] = r,1,1,1,1,imm4,imm4,imm4,imm4,V (imm4),,Simple store B,WU
+LDA,r = M[AR],1,1,0,1,1,1,0,0,,,Load A,WU
+LDB,r = M[AR],1,1,0,1,1,1,0,1,,,Load B,WU
+STA,M[AR] = r,1,1,0,1,1,1,1,0,,,Store A,WU
+STB,M[AR] = r,1,1,0,1,1,1,1,1,,,Store B,WU
+INVA,r = ~r,1,0,0,0,0,0,0,0,,,Invert A bits,ALU
+INVB,r = ~r,1,0,0,0,0,0,0,1,,,Invert B bits,ALU
+ADD,A = A + B,1,0,0,0,0,0,1,0,,If overflow,Add A and B,ALU
+SUB,A = A - B,1,0,0,0,0,0,1,1,,If underflow,Subtract B from A,ALU
+MUL,A = (A * B)[7:0],1,0,0,0,0,1,0,0,,If overflow,Multiply A and B,ALU
+DIV,A <= A / B; B <= A % B,1,0,0,0,0,1,0,1,,If divide by zero,"Divide A by B, remainder into B. If B = 0, A and B are unchanged",ALU
+SWAP,A <= B; B <= A,1,0,0,0,0,1,1,0,,,Swap A and B,ALU
+INC,A = A + 1,1,0,0,0,0,1,1,1,,If overflow,Increment A,ALU
+AND,A = A & B,1,0,0,0,1,0,0,0,,,Bitwise AND,ALU
+NAND,A = ~(A & B),1,0,0,0,1,0,0,1,,,Bitwise NAND,ALU
+OR,A = A | B,1,0,0,0,1,0,1,0,,,Bitwise OR,ALU
+NOR,A = ~(A | B),1,0,0,0,1,0,1,1,,,Bitwise NOR,ALU
+XOR,A = A ^ B,1,0,0,0,1,1,0,0,,,Bitwise XOR,ALU
+XNOR,A = ~(A ^ B),1,0,0,0,1,1,0,1,,,Bitwise XNOR,ALU
+SHL,A = A << B,1,0,0,0,1,1,1,0,,,Shift A left by B bits (A = 0 if B >= 8),ALU
+SHR,A = A >> B,1,0,0,0,1,1,1,1,,,Shift A right by B bits (A = 0 if B >= 8),ALU
+EQ,F = (A == B),1,0,0,1,0,0,0,0,,If true,Check if equal,ALU
+NEQ,F = ~(A == B),1,0,0,1,0,0,0,1,,If true,Check if not equal,ALU
+LT,F = A < B,1,0,0,1,0,0,1,0,,If true,Check if less than,ALU
+GTE,F = A >= B,1,0,0,1,0,0,1,1,,If true,Check if greater than or equal,ALU
+GT,F = A > B,1,0,0,1,0,1,0,0,,If true,Check if greater than,ALU
+LTE,F = A <= B,1,0,0,1,0,1,0,1,,If true,Check if less than or equal,ALU
+CLF,F = 0,1,0,0,1,0,1,1,0,,0,Clear flag,ALU
+STF,F = 1,1,0,0,1,0,1,1,1,,1,Set flag,ALU
+JMP,PC = AR,1,0,0,1,1,0,0,0,,,Jump,RU
+JF,"If F, PC = AR",1,0,0,1,1,0,0,1,,,Jump if flag,RU
+CALL,"S0 <= PC + 1; S1 <= S0; S2 <= S1; S3 <= S2; PC <= AR; D <= min(D + 1, 4)",1,0,0,1,1,0,1,0,,,Call subroutine at AR,RU
+RET,If D > 0: PC <= S0; S0 <= S1; S1 <= S2; S2 <= S3; S3 <= 0; D <= D - 1,1,0,0,1,1,0,1,1,,,"Return from subroutine. If the call stack is empty, only PC = PC + 1",RU
+TAR,AR = A,1,1,0,1,1,0,0,0,,,Transfer A to AR,WU

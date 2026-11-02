@@ -30,6 +30,10 @@ TAR (AR ← A) is added to enable computing in AR. This enables every AR-address
 
 Simple combinational MUL/DIV fits the architecture of this CPU.
 
+## MUL behavior
+
+Compute the full 16-bit product and look for OF in the high byte, for simplicity. A cheaper partial-product detector can be explored later.
+
 ## Centralized decode
 
 Mostly justified by me wanting to practice writing a CU. Classic choice for a small CPU.

@@ -1,5 +1,6 @@
 # Agent orientation, agent notes and reference code (kept local)
 CLAUDE.md
+AGENTS.md
 notes/
 ref/
 
@@ -8,3 +9,6 @@ playground/
 
 # Build outputs
 build/
+
+# Editor settings (kept local)
+.vscode/

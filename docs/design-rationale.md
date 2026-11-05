@@ -55,3 +55,11 @@ The CU picks the route and supplies whatever changes per instruction (e.g. immed
 ## Reset
 
 Synchronous, active-high.
+
+## White-box testbenches
+
+Hierarchical references are used in benches to make testing easier and more direct, at the cost of coupling to the implementation.
+
+## Direct testing
+
+Hierarchical `force` and `release` on internal signals were used to make testing easier as well. Real sequences will be provided by program tests later down the line. The tradeoff is it'll be a little harder to pinpoint the issue from the core down to the unit.

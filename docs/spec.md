@@ -12,8 +12,8 @@ Holds F, PC, call stack, call depth.
 
 Inputs:
 
-- jump
-- jump_conditional
+- jmp
+- jmp_cond
 - call
 - ret
 - new_F
@@ -25,8 +25,8 @@ Inputs:
 Flow and semantics:
 
 - rst => Set F to 0, PC to 0, S0 through S3 to 0, and call depth to 0
-- jump => execute a jump
-- jump + jump_conditional => execute a conditional jump. if F low => PC + 1
+- jmp => execute a jump
+- jmp + jmp_cond => execute a conditional jump. if F low => PC + 1
 - call => execute a call, going to AR
 - ret => execute a return, ret with D = 0 => PC + 1
 - write_F => update F, and PC takes PC + 1
@@ -92,7 +92,7 @@ Flow and semantics:
 - rst => set A, B and AR to 0
 - write_AB => update A and B to new values, where the mask is high (mask for A, mask_2 for B)
 - write_AR => update AR to new value, where the mask is high (mask)
-- do_tar => execute TAR, copy A into AR
+- do_TAR => execute TAR, copy A into AR
 - load => load M[AR] into the register picked by use_A
 - store => store the register picked by use_A into M[AR]
 - simple_load => same with M[simple_addr]
@@ -121,24 +121,25 @@ Decoding brain. Stateless and combinational.
 
 Inputs:
 
-- instruction (wired combinationally as PM[PC])
+- instr (wired combinationally as PM[PC])
 
 Flow and semantics:
 
-- Set ru_cs, alu_cs or wu_cs based on instruction
+- Set ru_cs, alu_cs or wu_cs based on instr
   - WU for ILA through STB and TAR
   - ALU for INVA through STF
   - RU for JMP through RET
   - Nothing for undefined opcode
 - Drives the necessary unit inputs accordingly
 - Commands an instruction doesn't need are held low
+- An instr with any x or z bit drives `x` on every output
 - Outputs to be muxed into the other unit inputs by core module
 
 Outputs:
 
 - ru_cs (route to RU)
-- ru_jump
-- ru_jump_conditional
+- ru_jmp
+- ru_jmp_cond
 - ru_call
 - ru_ret
 
@@ -151,7 +152,7 @@ Outputs:
 - wu_write_AB
 - wu_new_AR
 - wu_write_AR
-- wu_do_tar
+- wu_do_TAR
 - wu_use_A (high => use A, low => use B, for the operation)
 - wu_mask (8 bits)
 - wu_mask_2 (8 bits)
@@ -179,7 +180,7 @@ Flow and semantics (impl turns into muxes):
 - clk and rst to clocked modules
 - WU.AR to RU.AR
 - RU.PC to PM.addr
-- PM.out to CU.instruction
+- PM.out to CU.instr
 - 0 to PM.in, PM.write
 - PM gets a HEX_FILE, M doesn't
 - For each one below, pass through the appropriately named CU.* ports, for the instance inputs not listed, set to zero

@@ -1,36 +1,38 @@
-/* =============-=== RU Testbench =========-=======
+/* ================= RU Testbench =================
  * White-box testbench of the running unit
  * ================================================
  */
 module ru_tb;
 
-  import opcodes::*;
   import tb_prefs::*;
 
-  localparam logic [4:0] BIT_NOTHING   = 5'b0;
+  localparam logic [4:0] BIT_NOTHING    = 5'b0;
   localparam int         INDEX_JMP      = 4;
-  localparam logic [4:0] BIT_JMP       = 5'b1 << INDEX_JMP;
+  localparam logic [4:0] BIT_JMP        = 5'b1 << INDEX_JMP;
   localparam int         INDEX_JMP_COND = 3;
-  localparam logic [4:0] BIT_JMP_COND  = 5'b1 << INDEX_JMP_COND;
+  localparam logic [4:0] BIT_JMP_COND   = 5'b1 << INDEX_JMP_COND;
   localparam int         INDEX_CALL     = 2;
-  localparam logic [4:0] BIT_CALL      = 5'b1 << INDEX_CALL;
+  localparam logic [4:0] BIT_CALL       = 5'b1 << INDEX_CALL;
   localparam int         INDEX_RET      = 1;
-  localparam logic [4:0] BIT_RET       = 5'b1 << INDEX_RET;
+  localparam logic [4:0] BIT_RET        = 5'b1 << INDEX_RET;
   localparam int         INDEX_WRITE_F  = 0;
-  localparam logic [4:0] BIT_WRITE_F   = 5'b1 << INDEX_WRITE_F;
+  localparam logic [4:0] BIT_WRITE_F    = 5'b1 << INDEX_WRITE_F;
 
+  // Inputs
   logic [4:0] ctrl;
   logic new_F = '0;
-  logic [7:0] PC, AR = '0;
-  logic F;
   logic clk = 0, rst = 0;
 
+  // Outputs
+  logic [7:0] PC, AR = '0;
+  logic F;
+
   ru dut (
-    .jmp (ctrl[INDEX_JMP]),
+    .jmp      (ctrl[INDEX_JMP]),
     .jmp_cond (ctrl[INDEX_JMP_COND]),
-    .call (ctrl[INDEX_CALL]),
-    .ret (ctrl[INDEX_RET]),
-    .write_F (ctrl[INDEX_WRITE_F]),
+    .call     (ctrl[INDEX_CALL]),
+    .ret      (ctrl[INDEX_RET]),
+    .write_F  (ctrl[INDEX_WRITE_F]),
     .*
   );
 

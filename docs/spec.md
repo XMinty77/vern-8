@@ -74,7 +74,7 @@ Inputs:
 - write_AB
 - new_AR
 - write_AR
-- do_tar
+- do_TAR
 - use_A (high => use A, low => use B, for the operation)
 - mask (8 bits)
 - mask_2 (8 bits)
@@ -92,7 +92,7 @@ Flow and semantics:
 - rst => set A, B and AR to 0
 - write_AB => update A and B to new values, where the mask is high (mask for A, mask_2 for B)
 - write_AR => update AR to new value, where the mask is high (mask)
-- do_tar => execute TAR, copy A into TAR
+- do_tar => execute TAR, copy A into AR
 - load => load M[AR] into the register picked by use_A
 - store => store the register picked by use_A into M[AR]
 - simple_load => same with M[simple_addr]

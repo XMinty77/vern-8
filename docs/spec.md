@@ -181,6 +181,7 @@ Flow and semantics (impl turns into muxes):
 - RU.PC to PM.addr
 - PM.out to CU.instruction
 - 0 to PM.in, PM.write
+- PM gets a HEX_FILE, M doesn't
 - For each one below, pass through the appropriately named CU.* ports, for the instance inputs not listed, set to zero
 
 - ru_cs:
@@ -205,3 +206,23 @@ Flow and semantics (impl turns into muxes):
 - None of them:
   - 0 to RU.new_F, RU.write_F
   - 0 to M.write, M.addr, M.in
+
+## Memory
+
+Used for PM and M.
+
+Parameters:
+- HEX_FILE (loaded into the memory before simulation starts, empty => nothing is loaded and words stay `x`)
+
+Inputs:
+- addr
+- in
+- write
+- clk
+
+Flow and semantics:
+- Combinationally, out is memory[addr]
+- Sequentially, write => memory[addr] is assigned in
+
+Outputs:
+- out

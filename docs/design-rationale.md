@@ -63,3 +63,7 @@ Hierarchical references are used in benches to make testing easier and more dire
 ## Direct testing
 
 Hierarchical `force` and `release` on internal signals were used to make testing easier as well. Real sequences will be provided by program tests later down the line. The tradeoff is it'll be a little harder to pinpoint the issue from the core down to the unit.
+
+## Core verification
+
+Instead of writing a traditional SV testbench for Core, I opted to compare emulator internals on a set of verification programs against the SV simulation.

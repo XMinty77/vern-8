@@ -1,4 +1,4 @@
-# Simple 8-bit CPU in SystemVerilog
+# Vernacular 8
 
 A tiny single-cycle 8-bit CPU I'm writing in SystemVerilog. Simulation only, learning project.
 

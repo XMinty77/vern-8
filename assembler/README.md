@@ -23,7 +23,7 @@ loop:   IMF A, 0x2A     ; load the whole register
 - **Comments:** `;`, `#`, `%` and `//` are all supported.
 - **Numbers:** decimal `42`, hex `0x2A` or binary `0b101010`. Negative numbers are errors.
 - **Case:** labels and constants are case-sensitive, everything else is case-insensitive.
-- **Names:** alphanumerical with underscores and a letter at the start. Mnemonics, directives and registers are reserved.
+- **Names:** alphanumerical with underscores, cannot start with a digit. Mnemonics, directives and registers are reserved.
 
 ## Physical instructions
 
@@ -142,7 +142,7 @@ The value is a literal number from 0 to 255. A constant can go anywhere a number
 
 ### `.org address`
 
-Moves the next word to that address, for example `.org 0xFE` to test the PC wrapping from `0xFF` to `0x00`. The address is a number or a constant, and moving backward is an error, so code can't overwrite other code. Skipped words stay x, so a program that runs into a gap fails loudly.
+Moves the next word to that address, for example `.org 0xFE` to test the PC wrapping from `0xFF` to `0x00`. The address is a number or a constant, and moving backward is an error, so code can't overwrite other code. Skipped words stay x, so a program that runs into a gap fails loudly. A label names the next word, so one on the `.org` line or the line before it gets the new address.
 
 ## Output
 
@@ -159,11 +159,11 @@ C7 // FF: .byte 0xC7
 
 The comments always show physical instructions, so the file matches what you see in waveforms. `@FE` appears only where `.org` leaves a gap.
 
-Unused memory isn't padded, so a runaway program goes loudly x. The cost is that Icarus prints "Not enough words" each time it loads a program shorter than 256 words.
+Unused memory isn't padded, so a runaway program goes loudly x. The cost is that Icarus prints "Not enough words" when it loads a program shorter than 256 words, unless the file has an `@` marker.
 
 ## Errors
 
-Every error in a run is reported as `file:line: message`.
+Every error in a run is reported as `file:line: message`. A program past `0xFF` is reported once, at the first statement that doesn't fit.
 
 | Case | Example |
 | --- | --- |
@@ -175,7 +175,15 @@ Every error in a run is reported as `file:line: message`.
 | Label where a label isn't allowed | `ALO loop`, `LD A, loop`, `.byte loop` |
 | Undefined or duplicate name | `JMP nowhere`, two `loop:` lines |
 | Reserved name | `add:`, `ar:` |
-| More than one label on a line, or a label on `.equ` or `.org` | `a: b: ADD`, `here: .org 0x10` |
+| More than one label on a line, or a label on `.equ` | `a: b: ADD`, `here: .equ x, 1` |
 | Backward `.org` | `.org 0x10` after address `0x20` |
 | Program past `0xFF` | The 257th word, or a label left at `0x100` |
 | Bad `.equ` value | `.equ big, 300`, `.equ a2, other` |
+
+## Tests
+
+The tests need `pytest`:
+
+```
+python3 -m pytest assembler
+```

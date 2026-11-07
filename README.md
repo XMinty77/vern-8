@@ -8,7 +8,7 @@ A tiny single-cycle 8-bit CPU I'm writing in SystemVerilog. Simulation only, lea
 - 4-deep hardware call stack for `CALL`/`RET`.
 - 1-bit flag for comparisons, conditional branching and general operation status.
 
-**Status:** the RTL is written and runs programs. The ALU, RU, WU and CU have testbenches; the core's testbench, an emulator to check it against, and the assembler are next.
+**Status:** the RTL is written and runs programs. The ALU, RU, WU and CU have testbenches, and an assembler exists. The core's testbench and an emulator to check it against are next.
 
 ## Versioning
 

@@ -4,6 +4,8 @@ Unless said otherwise, rst signals override all other behavior including combina
 
 Unless said otherwise, any combination of control inputs not listed is disallowed and drives `x`
 
+Unless said otherwise, an `x` or `z` bit in anything that selects behavior (a control input, rst, an address, or state such as F on a conditional jump) drives `x` into every output and piece of state that behavior could reach
+
 ## RU - Running Unit
 
 Takes care of the running/addressing flows. Is stateful, clocked, has a reset.

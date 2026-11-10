@@ -21,7 +21,13 @@ module memory #(
   assign out = mem[addr];
 
   always_ff @(posedge clk) begin
-    if (write) mem[addr] <= in;
+    if ($isunknown(write) || write && $isunknown(addr)) begin
+      if ($isunknown(addr)) begin
+        for (int i = 0; i < 256; i++) begin : fill_with_x
+          mem[i] <= 'x;
+        end
+      end else mem[addr] <= 'x;
+    end else if (write) mem[addr] <= in;
   end
 
 endmodule

@@ -44,10 +44,14 @@ module alu (
         new_F = |mul_tmp[15:8];
       end
       DIV: begin
-        new_F = ( cur_B == '0 );
-        if (~new_F) begin
-          new_A = cur_A / cur_B;
-          new_B = cur_A % cur_B;
+        if ($isunknown(cur_B))
+          { new_F, new_A, new_B } = 'x;
+        else begin
+          new_F = ( cur_B == '0 );
+          if (~new_F) begin
+            new_A = cur_A / cur_B;
+            new_B = cur_A % cur_B;
+          end
         end
       end
 

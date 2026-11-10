@@ -59,58 +59,71 @@ module wu (
 
   // Combinational outputs
   always_comb begin
-    mem_val_out = '0;
-    mem_addr = '0;
-    mem_write ='0;
+    if ($isunknown(rst)) { mem_val_out, mem_addr, mem_write } = 'x;
+    else begin
+      { mem_val_out, mem_addr, mem_write } = '0;
 
-    if (~rst) begin
-      if (only_load) begin
-        mem_addr = _AR;
-        mem_write = '0;
-      end else if (only_simple_load) begin
-        mem_addr = 8'(simple_addr);
-        mem_write = '0;
-      end else if (only_store) begin
-        mem_addr = _AR;
-        mem_write = '1;
-      end else if (only_simple_store) begin
-        mem_addr = 8'(simple_addr);
-        mem_write = '1;
-      end
-      
-      if (only_store | only_simple_store) begin
-        if (use_A) mem_val_out = _A;
-        else       mem_val_out = _B;
+      if (~rst) begin
+        if ($isunknown(write_AB) || $isunknown(write_AR) || $isunknown(do_TAR) || $isunknown(load) ||
+            $isunknown(store) || $isunknown(simple_load) || $isunknown(simple_store))
+          { mem_val_out, mem_addr, mem_write } = 'x;
+        else if (only_load) begin
+          mem_addr = _AR;
+          mem_write = '0;
+        end else if (only_simple_load) begin
+          mem_addr = 8'(simple_addr);
+          mem_write = '0;
+        end else if (only_store) begin
+          mem_addr = _AR;
+          mem_write = '1;
+        end else if (only_simple_store) begin
+          mem_addr = 8'(simple_addr);
+          mem_write = '1;
+        end
+        
+        if (only_store || only_simple_store) begin
+          if ($isunknown(use_A)) mem_val_out = 'x;
+          else begin
+            if (use_A) mem_val_out = _A;
+            else       mem_val_out = _B;
+          end
+        end
       end
     end
   end
 
   // Pos edge sequential logic
   always_ff @(posedge clk) begin
-    if (rst) begin
-      // Reset overrides everything
-      _A <= '0;
-      _B <= '0;
-      _AR <= '0;
-    end else begin
-      if (only_write_AB) begin
-        _A <=  (new_A & mask) | (_A & ~mask);
-        _B <=  (new_B & mask_2) | (_B & ~mask_2);
-      end else if (only_write_AR) begin
-        _AR <= (new_AR & mask) | (_AR & ~mask);
-      end else if (only_do_TAR) begin
-        _AR <= _A;
-      end else if (only_load | only_simple_load) begin
-        if (use_A) _A <= mem_val_in;
-        else       _B <= mem_val_in;
-      end else if (only_store | only_simple_store) begin
-          // Handled by combinational output
-      end else if (!write_AB & !write_AR & !do_TAR & !load & !store & !simple_load & !simple_store) begin
-        // Do nothing??
+    if ($isunknown(rst)) { _A, _B , _AR } <= 'x;
+    else begin
+      if (rst) begin
+        // Reset overrides everything
+        _A <= '0;
+        _B <= '0;
+        _AR <= '0;
       end else begin
-        _A <= 'x;
-        _B <= 'x;
-        _AR <= 'x;
+        if (only_write_AB) begin
+          _A <=  (new_A & mask) | (_A & ~mask);
+          _B <=  (new_B & mask_2) | (_B & ~mask_2);
+        end else if (only_write_AR) begin
+          _AR <= (new_AR & mask) | (_AR & ~mask);
+        end else if (only_do_TAR) begin
+          _AR <= _A;
+        end else if (only_load | only_simple_load) begin
+          if ($isunknown(use_A)) { _A, _B } <= 'x;
+          else begin
+            if (use_A) _A <= mem_val_in;
+            else       _B <= mem_val_in;
+          end
+        end else if (only_store | only_simple_store) begin
+            // Handled by combinational output
+        end else if (!write_AB & !write_AR & !do_TAR & !load & !store & !simple_load & !simple_store) begin
+          // Do nothing??
+        end else begin
+          _A <= 'x;
+          _B <= 'x;
+          _AR <= 'x;
+        end
       end
     end
   end

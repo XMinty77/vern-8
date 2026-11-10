@@ -200,7 +200,7 @@ def test_write_mode_reports_each_write(tmp_path):
         SST A, 7
         HALT
     """)
-    assert [r.write for r in t.records] == [None] * 5 + [("42", "ab"), ("07", "ab")] + [None] * 3
+    assert [r.write for r in t.records] == [None] * 5 + [("42", "ab"), ("07", "ab")] + [None] * 7
 
 
 def test_jumps(tmp_path):

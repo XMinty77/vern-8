@@ -30,7 +30,7 @@ def test_comments_markers_and_digit_forms(tmp_path):
 """))
     assert ops(t) == [("00", "0a"), ("01", "1f"), ("02", "48"), ("03", "5f"),
                       ("04", "98"), ("f8", "0c"), ("f9", "4e"), ("fa", "5f"),
-                      ("fb", "98"), ("fe", "98")]
+                      ("fb", "98")] + [("fe", "98")] * 5
     assert t.end == "HALT"
     assert (t.last["a"], t.last["pc"]) == ("fc", "fe")
 
@@ -74,7 +74,7 @@ def test_empty_file_is_all_unknown(tmp_path):
 
 def test_last_address_ff(tmp_path):
     t, _ = run_emu(hexfile(tmp_path, "@0 4f 5f 98\n@ff 98\n"))  # AR = ff; JMP
-    assert ops(t)[-2:] == [("02", "98"), ("ff", "98")]
+    assert ops(t)[-6:] == [("02", "98")] + [("ff", "98")] * 5
     assert t.end == "HALT" and t.last["pc"] == "ff"
 
 
@@ -113,5 +113,5 @@ def test_whole_memory(tmp_path):
     words = ["4f", "5f"] + ["a0"] * 253 + ["98"]
     t, _ = run_emu(hexfile(tmp_path, "\n".join(words) + "\n"), "-n", "1000")
     assert t.end == "HALT"
-    assert len(t.steps) == 256
+    assert len(t.steps) == 260        # 256, then JMP ff 4 more times
     assert t.last["pc"] == "ff"

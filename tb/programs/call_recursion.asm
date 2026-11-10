@@ -1,9 +1,9 @@
 ; call_recursion: a recursive subroutine: sum(n) = n + sum(n - 1) with n and the total in
 ; data memory. n = 3 stays within the stack (depth 4 at the base case); then
 ; n = 6 overflows it, so the outer returns are lost and the first RET at depth
-; 0 falls through to the code after it. The NOP after the recursive CALL matters:
-; without it the inner returns land on the RET itself, and a RET that returns to
-; its own address leaves PC unchanged, which the emulator reports as a halt.
+; 0 falls through to the code after it. The NOP after the recursive CALL dates
+; from the old one-step halt rule, when a RET returning to its own address
+; counted as a halt; with five in a row it's no longer needed, but harmless.
 
 .equ n, 0
 .equ total, 1

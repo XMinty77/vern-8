@@ -31,8 +31,8 @@ def test_writes_trace_exact(tmp_path):
         "S 05 9a 06 5c xx 06 x 1 06 00 00 00 0 xx xx\n"
         "S 06 48 07 5c xx 08 x 1 06 00 00 00 0 xx xx\n"
         "S 07 50 08 5c xx 08 x 1 06 00 00 00 0 xx xx\n"
-        "S 08 98 08 5c xx 08 x 1 06 00 00 00 0 xx xx\n"
-        "END HALT\n")
+        + "S 08 98 08 5c xx 08 x 1 06 00 00 00 0 xx xx\n" * 5
+        + "END HALT\n")
 
 
 def test_full_trace_exact(tmp_path):
@@ -45,7 +45,8 @@ def test_full_trace_exact(tmp_path):
                         "003 003 xx 001 5c 0fc xx")
     assert lines[9] == ("S 08 98 08 5c xx 08 x 1 06 00 00 00 "
                         "003 003 xx 001 5c 0fc xx")
-    assert lines[10] == "END HALT"
+    assert lines[10:14] == [lines[9]] * 4
+    assert lines[14] == "END HALT"
 
 
 def test_full_memory_runs(tmp_path):
@@ -81,27 +82,34 @@ def test_trace_to_file_matches_stdout(tmp_path):
 def test_halt_on_jf_to_itself(tmp_path):
     t = run_asm(tmp_path, "STF\nIMF AR, 3\nJF\n")
     assert t.end == "HALT" and t.last["pc"] == "03"
-    assert len(t.steps) == 4
+    assert len(t.steps) == 8          # 3 to get there, then 5 at 03
 
 
 def test_jf_not_taken_does_not_halt(tmp_path):
     t = run_asm(tmp_path, "CLF\nIMF AR, 3\nJF\nHALT\n")
     assert t.steps[3].state["pc"] == "04"
-    assert len(t.steps) == 7
+    assert len(t.steps) == 11
+
+
+def test_halt_needs_five_unchanged_in_a_row(tmp_path):
+    t = run_asm(tmp_path, "HALT\n")
+    assert t.end == "HALT" and len(t.steps) == 7     # ALO, AHI, then JMP 5 times
+    assert [r.epc for r in t.steps[2:]] == ["02"] * 5
 
 
 def test_call_to_itself_halts(tmp_path):
-    # PC unchanged is the halt rule, even though the stack moved.
+    # PC never changes again: a halt, with the stack full by then.
     t = run_asm(tmp_path, "IMF AR, 2\nCALL\n")
     assert t.end == "HALT"
-    assert (t.last["pc"], t.last["d"], t.last["s0"]) == ("02", "1", "03")
+    assert (t.last["pc"], t.last["d"], t.last["s0"]) == ("02", "4", "03")
 
 
-def test_ret_to_itself_halts(tmp_path):
-    # CALL at 02 pushes 03; RET at 03 returns to 03.
-    t = run_asm(tmp_path, "IMF AR, 3\nCALL\nRET\n")
+def test_ret_to_itself_does_not_halt(tmp_path):
+    # CALL at 02 pushes 03; RET at 03 returns to 03 once, then (D = 0) steps on.
+    t = run_asm(tmp_path, "IMF AR, 3\nCALL\nRET\nHALT\n")
     assert t.end == "HALT"
-    assert [(r.epc, r.op) for r in t.steps[-2:]] == [("02", "9a"), ("03", "9b")]
+    assert [(r.epc, r.op) for r in t.steps[2:5]] == [("02", "9a"), ("03", "9b"), ("03", "9b")]
+    assert t.last["pc"] == "06"
 
 
 def test_step_limit(tmp_path):
@@ -111,9 +119,9 @@ def test_step_limit(tmp_path):
     assert len(t.steps) == 10
     assert "10" in r.stderr
     # The limit counts instructions: one halting exactly at the limit halts.
-    t, _ = run_emu(assemble(tmp_path, "HALT\n", "h"), "-n", "3")
+    t, _ = run_emu(assemble(tmp_path, "HALT\n", "h"), "-n", "7")
     assert t.end == "HALT"
-    t, _ = run_emu(assemble(tmp_path, "HALT\n", "h"), "-n", "2")
+    t, _ = run_emu(assemble(tmp_path, "HALT\n", "h"), "-n", "6")
     assert t.end == "LIMIT"
     t, _ = run_emu(hexp, "--max-steps", "0")
     assert t.end == "LIMIT" and t.steps == []

@@ -17,6 +17,9 @@
 #endif
 
 #define DEFAULT_MAX_STEPS 100000ULL
+/* A run halts once this many instructions in a row leave PC unchanged. More
+ * than the stack depth, so a chain of RETs to their own address doesn't count. */
+#define HALT_RUN 5
 
 enum { EXIT_HALT = 0, EXIT_PROG_ERROR = 1, EXIT_LIMIT = 2, EXIT_USAGE = 3 };
 
@@ -136,6 +139,7 @@ int main(int argc, char **argv) {
 
   int status = EXIT_LIMIT;
   unsigned long long steps = 0;
+  int unchanged = 0;
   while (steps < max_steps) {
     uint8_t pc = cpu.pc;
     step_t st;
@@ -148,7 +152,8 @@ int main(int argc, char **argv) {
     }
     steps++;
     trace_step(out, pc, &st, &cpu, mode);
-    if (cpu.pc == pc) {
+    unchanged = cpu.pc == pc ? unchanged + 1 : 0;
+    if (unchanged == HALT_RUN) {
       trace_end_halt(out);
       status = EXIT_HALT;
       break;

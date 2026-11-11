@@ -14,15 +14,15 @@ module core_tb;
   import tb_prefs::*;
 
   // Edges the core is held in reset for, from power-up
-  localparam int RESET_EDGES = 2;
+  localparam int ResetEdges = 2;
   // Edges checked after the trace halts
-  localparam int HALT_EDGES  = 2;
+  localparam int HaltEdges  = 2;
 
-  logic clk = 0, rst = 1;
+  logic clk_i = 0, rst_i = 1;
 
   core dut (.*);
 
-  initial forever #5 clk = ~clk;
+  initial forever #5 clk_i = ~clk_i;
 
   int errors;
   int step;
@@ -63,7 +63,7 @@ module core_tb;
   );
     assert (agrees(actual, expected)) else begin
       errors++;
-      if (errors <= ERRORS_CAP)
+      if (errors <= ErrorsCap)
         $error("Step %0d (PC=%h, instr=%h): expected %s=%h, got %h",
                step, epc, op, name, expected, actual);
     end
@@ -80,25 +80,25 @@ module core_tb;
 
   // Architectural state against the current record
   task automatic check_state;
-    check("PC", dut.ru_out_PC, pc);
-    check("A",  dut.wu_out_A,  a);
-    check("B",  dut.wu_out_B,  b);
-    check("AR", dut.wu_out_AR, ar);
-    check("F",  {7'b0, dut.ru_out_F}, {7'b0, f});
-    check("D",  {5'b0, dut.ru.D},     {4'b0, d});
-    check("S0", dut.ru.S[0], s0);
-    check("S1", dut.ru.S[1], s1);
-    check("S2", dut.ru.S[2], s2);
-    check("S3", dut.ru.S[3], s3);
+    check("PC", dut.ru_pc, pc);
+    check("A",  dut.wu_a,  a);
+    check("B",  dut.wu_b,  b);
+    check("AR", dut.wu_ar, ar);
+    check("F",  {7'b0, dut.ru_f},   {7'b0, f});
+    check("D",  {5'b0, dut.u_ru.d_q}, {4'b0, d});
+    check("S0", dut.u_ru.s_q[0], s0);
+    check("S1", dut.u_ru.s_q[1], s1);
+    check("S2", dut.u_ru.s_q[2], s2);
+    check("S3", dut.u_ru.s_q[3], s3);
   endtask
 
   // M's write port, before the edge that writes. Required even where the
   // shadow is x: a stray write there would pass check_memory
   task automatic check_write;
-    check("M_write", {7'b0, dut.M_write}, {7'b0, w});
+    check("m_write", {7'b0, dut.m_write}, {7'b0, w});
     if (w) begin
-      check("M_addr", dut.M_addr, w_addr);
-      check("M_in",   dut.M_in,   w_data);
+      check("m_addr",  dut.m_addr,  w_addr);
+      check("m_wdata", dut.m_wdata, w_data);
     end
   endtask
 
@@ -106,8 +106,8 @@ module core_tb;
   // step costs more than the rest of the bench
   task automatic check_memory;
     for (int i = 0; i < 256; i++)
-      if (!agrees(dut.M.mem[i], shadow[i]))
-        check($sformatf("M[%h]", 8'(i)), dut.M.mem[i], shadow[i]);
+      if (!agrees(dut.u_m.mem[i], shadow[i]))
+        check($sformatf("M[%h]", 8'(i)), dut.u_m.mem[i], shadow[i]);
   endtask
 
   initial begin
@@ -124,18 +124,18 @@ module core_tb;
       $fatal(1, "Usage: +hex=<program.hex> +trace=<trace file> [+end=HALT|ERROR|LIMIT]");
     if (!$value$plusargs("end=%s", exp_end)) exp_end = "HALT";
 
-    // White-box load: PM's own HEX_FILE stays ""
-    $readmemh(hex_file, dut.PM.mem);
+    // White-box load: PM's own HexFile stays ""
+    $readmemh(hex_file, dut.u_pm.mem);
     fd = $fopen(trace_file, "r");
     if (fd == 0) $fatal(1, "Can't open %s", trace_file);
     for (int i = 0; i < 256; i++) shadow[i] = 'x;
 
     // Reset from power-up; M must never be written meanwhile
-    repeat (RESET_EDGES) begin
-      @(negedge clk);
-      check("M_write during rst", {7'b0, dut.M_write}, 8'h00);
+    repeat (ResetEdges) begin
+      @(negedge clk_i);
+      check("m_write during rst_i", {7'b0, dut.m_write}, 8'h00);
     end
-    rst = 0;
+    rst_i = 0;
 
     // State after reset
     n = $fscanf(fd, "%s", tag);
@@ -154,11 +154,11 @@ module core_tb;
         step++;
 
         // Before the edge: the instruction fetched and the write it makes
-        check("instr", dut.PM_out, op);
+        check("instr", dut.pm_rdata, op);
         check_write();
 
         // After the edge: the state it leaves
-        @(negedge clk);
+        @(negedge clk_i);
         check_state();
         if (w) shadow[w_addr] = w_data;
         check_memory();
@@ -188,27 +188,27 @@ module core_tb;
     // A halted core stays put: same state, no writes
     if (errors == 0 && end_kind == "HALT") begin
       w = 0;
-      repeat (HALT_EDGES) begin
+      repeat (HaltEdges) begin
         step++;
         check_write();
-        @(negedge clk);
+        @(negedge clk_i);
         check_state();
         check_memory();
       end
 
-      // Reset is synchronous: rst rising between edges changes nothing
+      // Reset is synchronous: rst_i rising between edges changes nothing
       // before the edge, then the edge resets
       step++;
-      rst = 1;
+      rst_i = 1;
       #1;
       check_state();
-      check("M_write during rst", {7'b0, dut.M_write}, 8'h00);
-      @(negedge clk);
+      check("m_write during rst_i", {7'b0, dut.m_write}, 8'h00);
+      @(negedge clk_i);
       // isa.md Reset: A, B, AR, F stay undefined
       { pc, s0, s1, s2, s3, d } = '0;
       { a, b, ar, f } = 'x;
       check_state();
-      rst = 0;
+      rst_i = 0;
     end
 
     if (errors == 0) begin

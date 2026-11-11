@@ -1,5 +1,5 @@
 package tb_prefs;
 
-  localparam int ERRORS_CAP = 5;
+  localparam int ErrorsCap = 5;
   
 endpackage

@@ -3,8 +3,9 @@
 
 Usage: python3 scripts/gen_opcodes.py docs/instructions.csv rtl/opcodes.sv
 
-One `localparam logic [7:0]` per CSV row, grouped by the Unit column (in the
-order units first appear), with `?` for every imm4 bit.
+One `localparam logic [7:0]` per CSV row, named in UpperCamelCase (ILA becomes
+Ila), grouped by the Unit column (in the order units first appear), with `?`
+for every imm4 bit.
 """
 
 import csv
@@ -37,15 +38,19 @@ def read_rows(csv_path):
     return rows
 
 
+def const_name(name):
+    return "".join(part.capitalize() for part in name.split("_"))
+
+
 def bit_string(row):
     return "".join("?" if row[b] == "imm4" else row[b] for b in BITS)
 
 
 def generate(rows, csv_path):
-    width = max(len(r["Name"]) for r in rows)
+    width = max(len(const_name(r["Name"])) for r in rows)
 
     def const(row):
-        return f"  localparam logic [7:0] {row['Name']:<{width}} = 8'b{bit_string(row)};"
+        return f"  localparam logic [7:0] {const_name(row['Name']):<{width}} = 8'b{bit_string(row)};"
 
     units = []
     for row in rows:

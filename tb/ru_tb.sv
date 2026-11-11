@@ -6,39 +6,39 @@ module ru_tb;
 
   import tb_prefs::*;
 
-  localparam logic [4:0] BIT_NOTHING    = 5'b0;
-  localparam int         INDEX_JMP      = 4;
-  localparam logic [4:0] BIT_JMP        = 5'b1 << INDEX_JMP;
-  localparam int         INDEX_JMP_COND = 3;
-  localparam logic [4:0] BIT_JMP_COND   = 5'b1 << INDEX_JMP_COND;
-  localparam int         INDEX_CALL     = 2;
-  localparam logic [4:0] BIT_CALL       = 5'b1 << INDEX_CALL;
-  localparam int         INDEX_RET      = 1;
-  localparam logic [4:0] BIT_RET        = 5'b1 << INDEX_RET;
-  localparam int         INDEX_WRITE_F  = 0;
-  localparam logic [4:0] BIT_WRITE_F    = 5'b1 << INDEX_WRITE_F;
+  localparam logic [4:0] BitNothing   = 5'b0;
+  localparam int         IndexJmp     = 4;
+  localparam logic [4:0] BitJmp       = 5'b1 << IndexJmp;
+  localparam int         IndexJmpCond = 3;
+  localparam logic [4:0] BitJmpCond   = 5'b1 << IndexJmpCond;
+  localparam int         IndexCall    = 2;
+  localparam logic [4:0] BitCall      = 5'b1 << IndexCall;
+  localparam int         IndexRet     = 1;
+  localparam logic [4:0] BitRet       = 5'b1 << IndexRet;
+  localparam int         IndexWriteF  = 0;
+  localparam logic [4:0] BitWriteF    = 5'b1 << IndexWriteF;
 
   // Inputs
   logic [4:0] ctrl;
-  logic new_F = '0;
-  logic clk = 0, rst = 0;
+  logic new_f_i = '0;
+  logic clk_i = 0, rst_i = 0;
 
   // Outputs
-  logic [7:0] PC, AR = '0;
-  logic F;
+  logic [7:0] pc_o, ar_i = '0;
+  logic f_o;
 
   ru dut (
-    .jmp      (ctrl[INDEX_JMP]),
-    .jmp_cond (ctrl[INDEX_JMP_COND]),
-    .call     (ctrl[INDEX_CALL]),
-    .ret      (ctrl[INDEX_RET]),
-    .write_F  (ctrl[INDEX_WRITE_F]),
+    .jmp_i      (ctrl[IndexJmp]),
+    .jmp_cond_i (ctrl[IndexJmpCond]),
+    .call_i     (ctrl[IndexCall]),
+    .ret_i      (ctrl[IndexRet]),
+    .write_f_i  (ctrl[IndexWriteF]),
     .*
   );
 
   initial begin
-    clk = 0;
-    forever #5 clk = ~clk;
+    clk_i = 0;
+    forever #5 clk_i = ~clk_i;
   end
 
   int errors;
@@ -49,44 +49,44 @@ module ru_tb;
     input logic [7:0]       address,
     input logic             new_f
   );
-    @(negedge clk);
-    rst = reset;
+    @(negedge clk_i);
+    rst_i = reset;
     ctrl = control;
-    new_F = new_f;
-    AR = address;
+    new_f_i = new_f;
+    ar_i = address;
 
-    @(posedge clk);
+    @(posedge clk_i);
     #1;
   endtask
 
   task automatic check (
-    input logic             exp_F,
-    input logic [7:0]       exp_PC,
-    input logic [3:0][7:0]  exp_S,
-    input logic [2:0]       exp_D
+    input logic             exp_f,
+    input logic [7:0]       exp_pc,
+    input logic [3:0][7:0]  exp_s,
+    input logic [2:0]       exp_d
   );
-    assert (PC === exp_PC) else begin
+    assert (pc_o === exp_pc) else begin
       errors++;
-      if (errors <= ERRORS_CAP)
-        $error("Expected PC=%h, got %h", exp_PC, PC);
+      if (errors <= ErrorsCap)
+        $error("Expected PC=%h, got %h", exp_pc, pc_o);
     end
 
-    assert (F === exp_F) else begin
+    assert (f_o === exp_f) else begin
       errors++;
-      if (errors <= ERRORS_CAP)
-        $error("Expected F=%b, got %b", exp_F, F);
+      if (errors <= ErrorsCap)
+        $error("Expected F=%b, got %b", exp_f, f_o);
     end
 
-    assert (dut.S === exp_S) else begin
+    assert (dut.s_q === exp_s) else begin
       errors++;
-      if (errors <= ERRORS_CAP)
-        $error("Expected S=%h, got %h", exp_S, dut.S);
+      if (errors <= ErrorsCap)
+        $error("Expected S=%h, got %h", exp_s, dut.s_q);
     end
 
-    assert (dut.D === exp_D) else begin
+    assert (dut.d_q === exp_d) else begin
       errors++;
-      if (errors <= ERRORS_CAP)
-        $error("Expected D=%0d, got %0d", exp_D, dut.D);
+      if (errors <= ErrorsCap)
+        $error("Expected D=%0d, got %0d", exp_d, dut.d_q);
     end
   endtask
 
@@ -95,51 +95,51 @@ module ru_tb;
     input logic [4:0]       control,
     input logic [7:0]       address,
     input logic             new_f,
-    input logic             exp_F,
-    input logic [7:0]       exp_PC,
-    input logic [3:0][7:0]  exp_S,
-    input logic [2:0]       exp_D
+    input logic             exp_f,
+    input logic [7:0]       exp_pc,
+    input logic [3:0][7:0]  exp_s,
+    input logic [2:0]       exp_d
   );
     step(reset, control, address, new_f);
-    check(exp_F, exp_PC, exp_S, exp_D);
+    check(exp_f, exp_pc, exp_s, exp_d);
   endtask
 
   task automatic empty_step();
     step (
       /* .reset   */ ('0),
-      /* .control */ (BIT_NOTHING),
+      /* .control */ (BitNothing),
       /* .address */ ('0),
       /* .new_f   */ ('0)
     );
   endtask
 
   task set_state (
-    input logic             set_F,
-    input logic [7:0]       set_PC,
-    input logic [3:0][7:0]  set_S,
-    input logic [2:0]       set_D
+    input logic             set_f,
+    input logic [7:0]       set_pc,
+    input logic [3:0][7:0]  set_s,
+    input logic [2:0]       set_d
   );
-    force dut._F = set_F;
-    force dut._PC = set_PC;
-    force dut.S = set_S;
-    force dut.D = set_D;
+    force dut.f_q = set_f;
+    force dut.pc_q = set_pc;
+    force dut.s_q = set_s;
+    force dut.d_q = set_d;
 
     #1;
 
-    release dut._F;
-    release dut._PC;
-    release dut.D;
-    release dut.S;
+    release dut.f_q;
+    release dut.pc_q;
+    release dut.d_q;
+    release dut.s_q;
   endtask
 
   task automatic step_set_state (
-    input logic             set_F,
-    input logic [7:0]       set_PC,
-    input logic [3:0][7:0]  set_S,
-    input logic [2:0]       set_D
+    input logic             set_f,
+    input logic [7:0]       set_pc,
+    input logic [3:0][7:0]  set_s,
+    input logic [2:0]       set_d
   );
     empty_step();
-    set_state(set_F, set_PC, set_S, set_D);
+    set_state(set_f, set_pc, set_s, set_d);
   endtask
 
   initial begin
@@ -148,7 +148,7 @@ module ru_tb;
 
 
     $display("Testing startup reset");
-    step('1, BIT_NOTHING, '1, '1);
+    step('1, BitNothing, '1, '1);
     check('0, '0, '0, '0);
 
 
@@ -159,10 +159,10 @@ module ru_tb;
           for (int c = 0; c < 32; c++) begin
             // Positional arguments not supported by Icarus 12
             step_set_state(
-              /* .set_F   */ (1'(f)),
-              /* .set_PC  */ (8'hA5),
-              /* .set_S   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
-              /* .set_D   */ (3'(d))
+              /* .set_f   */ (1'(f)),
+              /* .set_pc  */ (8'hA5),
+              /* .set_s   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
+              /* .set_d   */ (3'(d))
             );
 
             step_check(
@@ -170,10 +170,10 @@ module ru_tb;
               /* .control */ (5'(c)),
               /* .address */ (8'h5A),
               /* .new_f   */ (1'(~f)),
-              /* .exp_F   */ ('0),
-              /* .exp_PC  */ ('0),
-              /* .exp_S   */ ('0),
-              /* .exp_D   */ ('0)
+              /* .exp_f   */ ('0),
+              /* .exp_pc  */ ('0),
+              /* .exp_s   */ ('0),
+              /* .exp_d   */ ('0)
             );
           end
         end
@@ -187,21 +187,21 @@ module ru_tb;
         for (int f = 0; f <= 1; f++) begin
           for (int i = 0; i < 256; i++) begin
             step_set_state(
-              /* .set_F   */ (1'(f)),
-              /* .set_PC  */ (8'(i)),
-              /* .set_S   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
-              /* .set_D   */ (3'(d))
+              /* .set_f   */ (1'(f)),
+              /* .set_pc  */ (8'(i)),
+              /* .set_s   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
+              /* .set_d   */ (3'(d))
             );
 
             step_check(
               /* .reset   */ ('0),
-              /* .control */ (BIT_NOTHING),
+              /* .control */ (BitNothing),
               /* .address */ (8'(~i)),
               /* .new_f   */ (1'(~f)),
-              /* .exp_F   */ (F),
-              /* .exp_PC  */ (8'(i + 1)),
-              /* .exp_S   */ (dut.S),
-              /* .exp_D   */ (dut.D)
+              /* .exp_f   */ (f_o),
+              /* .exp_pc  */ (8'(i + 1)),
+              /* .exp_s   */ (dut.s_q),
+              /* .exp_d   */ (dut.d_q)
             );
           end
         end
@@ -216,21 +216,21 @@ module ru_tb;
           for (int n = 0; n <= 1; n++) begin
             for (int i = 0; i < 256; i++) begin
               step_set_state(
-                /* .set_F   */ (1'(f)),
-                /* .set_PC  */ (8'(i)),
-                /* .set_S   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
-                /* .set_D   */ (3'(d))
+                /* .set_f   */ (1'(f)),
+                /* .set_pc  */ (8'(i)),
+                /* .set_s   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
+                /* .set_d   */ (3'(d))
               );
 
               step_check(
                 /* .reset   */ ('0),
-                /* .control */ (BIT_WRITE_F),
+                /* .control */ (BitWriteF),
                 /* .address */ (8'(~i)),
                 /* .new_f   */ (1'(n)),
-                /* .exp_F   */ (1'(n)),
-                /* .exp_PC  */ (8'(i + 1)),
-                /* .exp_S   */ (dut.S),
-                /* .exp_D   */ (dut.D)
+                /* .exp_f   */ (1'(n)),
+                /* .exp_pc  */ (8'(i + 1)),
+                /* .exp_s   */ (dut.s_q),
+                /* .exp_d   */ (dut.d_q)
               );
             end
           end
@@ -245,21 +245,21 @@ module ru_tb;
         for (int f = 0; f <= 1; f++) begin
           for (int i = 0; i < 256; i++) begin
             step_set_state(
-              /* .set_F   */ (1'(f)),
-              /* .set_PC  */ (8'(~i)),
-              /* .set_S   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
-              /* .set_D   */ (3'(d))
+              /* .set_f   */ (1'(f)),
+              /* .set_pc  */ (8'(~i)),
+              /* .set_s   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
+              /* .set_d   */ (3'(d))
             );
 
             step_check(
               /* .reset   */ ('0),
-              /* .control */ (BIT_JMP),
+              /* .control */ (BitJmp),
               /* .address */ (8'(i)),
               /* .new_f   */ (1'(~f)),
-              /* .exp_F   */ (F),
-              /* .exp_PC  */ (8'(i)),
-              /* .exp_S   */ (dut.S),
-              /* .exp_D   */ (dut.D)
+              /* .exp_f   */ (f_o),
+              /* .exp_pc  */ (8'(i)),
+              /* .exp_s   */ (dut.s_q),
+              /* .exp_d   */ (dut.d_q)
             );
           end
         end
@@ -272,21 +272,21 @@ module ru_tb;
         for (int f = 0; f <= 1; f++) begin
           for (int i = 0; i < 256; i++) begin
             step_set_state(
-              /* .set_F   */ (1'(f)),
-              /* .set_PC  */ (8'(~i)),
-              /* .set_S   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
-              /* .set_D   */ (3'(d))
+              /* .set_f   */ (1'(f)),
+              /* .set_pc  */ (8'(~i)),
+              /* .set_s   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
+              /* .set_d   */ (3'(d))
             );
 
             step_check(
               /* .reset   */ ('0),
-              /* .control */ (BIT_JMP | BIT_JMP_COND),
+              /* .control */ (BitJmp | BitJmpCond),
               /* .address */ (8'(i)),
               /* .new_f   */ (1'(~f)),
-              /* .exp_F   */ (F),
-              /* .exp_PC  */ (1'(f) ? 8'(i) : (8'(~i + 1))),
-              /* .exp_S   */ (dut.S),
-              /* .exp_D   */ (dut.D)
+              /* .exp_f   */ (f_o),
+              /* .exp_pc  */ (1'(f) ? 8'(i) : (8'(~i + 1))),
+              /* .exp_s   */ (dut.s_q),
+              /* .exp_d   */ (dut.d_q)
             );
           end
         end
@@ -300,21 +300,21 @@ module ru_tb;
         for (int f = 0; f <= 1; f++) begin
           for (int i = 0; i < 256; i++) begin
             step_set_state(
-              /* .set_F   */ (1'(f)),
-              /* .set_PC  */ (8'(~i)),
-              /* .set_S   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
-              /* .set_D   */ (3'(d))
+              /* .set_f   */ (1'(f)),
+              /* .set_pc  */ (8'(~i)),
+              /* .set_s   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
+              /* .set_d   */ (3'(d))
             );
 
             step_check(
               /* .reset   */ ('0),
-              /* .control */ (BIT_CALL),
+              /* .control */ (BitCall),
               /* .address */ (8'(i)),
               /* .new_f   */ (1'(~f)),
-              /* .exp_F   */ (F),
-              /* .exp_PC  */ (8'(i)),
-              /* .exp_S   */ ({dut.S[2:0], 8'(~i + 1)}),      // Push semantics
-              /* .exp_D   */ ((d == 4) ? 3'(d) : 3'(d + 1))   // Increase till 4
+              /* .exp_f   */ (f_o),
+              /* .exp_pc  */ (8'(i)),
+              /* .exp_s   */ ({dut.s_q[2:0], 8'(~i + 1)}),      // Push semantics
+              /* .exp_d   */ ((d == 4) ? 3'(d) : 3'(d + 1))   // Increase till 4
             );
           end
         end
@@ -328,21 +328,21 @@ module ru_tb;
         for (int f = 0; f <= 1; f++) begin
           for (int i = 0; i < 256; i++) begin
             step_set_state(
-              /* .set_F   */ (1'(f)),
-              /* .set_PC  */ (8'(~i)),
-              /* .set_S   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
-              /* .set_D   */ (3'(d))
+              /* .set_f   */ (1'(f)),
+              /* .set_pc  */ (8'(~i)),
+              /* .set_s   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
+              /* .set_d   */ (3'(d))
             );
 
             step_check(
               /* .reset   */ ('0),
-              /* .control */ (BIT_RET),
+              /* .control */ (BitRet),
               /* .address */ (8'(i)),
               /* .new_f   */ (1'(~f)),
-              /* .exp_F   */ (F),
-              /* .exp_PC  */ ((d == 0) ? 8'(~i + 1) : dut.S[0]),
-              /* .exp_S   */ ((d == 0) ? dut.S : {8'h00, dut.S[3:1]}),  // Pop semantics
-              /* .exp_D   */ ((d == 0) ? 3'(d) : 3'(d - 1))             // Decrease till zero
+              /* .exp_f   */ (f_o),
+              /* .exp_pc  */ ((d == 0) ? 8'(~i + 1) : dut.s_q[0]),
+              /* .exp_s   */ ((d == 0) ? dut.s_q : {8'h00, dut.s_q[3:1]}),  // Pop semantics
+              /* .exp_d   */ ((d == 0) ? 3'(d) : 3'(d - 1))             // Decrease till zero
             );
           end
         end
@@ -356,18 +356,18 @@ module ru_tb;
         for (int f = 0; f <= 1; f++) begin
           for (int c = 0; c < 32; c++) begin
             if (
-              5'(c) != BIT_NOTHING &&
-              5'(c) != BIT_JMP &&
-              5'(c) != (BIT_JMP | BIT_JMP_COND) &&
-              5'(c) != BIT_CALL &&
-              5'(c) != BIT_RET &&
-              5'(c) != BIT_WRITE_F
+              5'(c) != BitNothing &&
+              5'(c) != BitJmp &&
+              5'(c) != (BitJmp | BitJmpCond) &&
+              5'(c) != BitCall &&
+              5'(c) != BitRet &&
+              5'(c) != BitWriteF
             ) begin
               step_set_state(
-                /* .set_F   */ (1'(f)),
-                /* .set_PC  */ (8'hA5),
-                /* .set_S   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
-                /* .set_D   */ (3'(d))
+                /* .set_f   */ (1'(f)),
+                /* .set_pc  */ (8'hA5),
+                /* .set_s   */ (1'(s) ? 32'h44_33_22_11 : 32'hBB_CC_DD_EE),
+                /* .set_d   */ (3'(d))
               );
 
               step_check(
@@ -375,10 +375,10 @@ module ru_tb;
                 /* .control */ (5'(c)),
                 /* .address */ (8'h5A),
                 /* .new_f   */ (1'(~f)),
-                /* .exp_F   */ ('x),
-                /* .exp_PC  */ ('x),
-                /* .exp_S   */ ('x),
-                /* .exp_D   */ ('x)
+                /* .exp_f   */ ('x),
+                /* .exp_pc  */ ('x),
+                /* .exp_s   */ ('x),
+                /* .exp_d   */ ('x)
               );
             end
           end

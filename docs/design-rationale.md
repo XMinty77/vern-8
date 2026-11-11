@@ -67,3 +67,7 @@ Hierarchical `force` and `release` on internal signals were used to make testing
 ## Core verification
 
 Instead of writing a traditional SV testbench for Core, I opted to compare emulator internals on a set of verification programs against the SV simulation.
+
+## Style
+
+The lowRISC style was adopted as a convention for this project, for being a well-known public SV style guide.

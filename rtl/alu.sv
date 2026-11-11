@@ -1,112 +1,74 @@
-/* ================ ALU Implementation ================
- * Simple combinational ALU as per spec
- * Relies on SV for hardware arithmetic operations
- * TODO: Consider doing a div alg that computes quotient and remainder
-    together, since separate / and % may synthesize to two dividers
- * ====================================================
+/* ================ ALU ================
+ * Combinational ALU: computes new A, B and F from the current ones
+ * =====================================
  */
 
 module alu (
-  input  logic [7:0] opcode,    // The full instruction byte, non-ALU opcodes give x outputs
-  input  logic [7:0] cur_A,     // The current value of A
-  input  logic [7:0] cur_B,     // The current value of B
-  input  logic       cur_F,     // The current flag value
-  output logic [7:0] new_A,     // The computed new value of A
-  output logic [7:0] new_B,     // The computed new value of B
-  output logic       new_F      // The computed new flag
+  input  logic [7:0] op_i,      // Full instruction byte, non-ALU opcodes give x outputs
+  input  logic [7:0] a_i,
+  input  logic [7:0] b_i,
+  input  logic       f_i,
+  output logic [7:0] new_a_o,
+  output logic [7:0] new_b_o,
+  output logic       new_f_o
 );
-  // Import opcodes package
+
   import opcodes::*;
 
-  // Combinational
   always_comb begin
-    // Used for holding multiplication result for OF detection
-    logic [15:0] mul_tmp;
+    logic [15:0] product;       // Full product, the high byte sets F (overflow)
+    product = 'x;
 
-    // Garbage by default
-    mul_tmp = 'x;
+    { new_a_o, new_b_o, new_f_o } = { a_i, b_i, f_i };
 
-    // Passthrough current values by default
-    new_A = cur_A;
-    new_B = cur_B;
-    new_F = cur_F;
-
-    // Switch by opcode
-    case (opcode)
+    case (op_i)
       // Arithmetic
-      ADD:
-        { new_F, new_A } = cur_A + cur_B;
-      SUB:
-        { new_F, new_A } = cur_A - cur_B;
-      MUL: begin
-        mul_tmp = cur_A * cur_B;
-        new_A = mul_tmp[7:0];
-        new_F = |mul_tmp[15:8];
+      Add:  { new_f_o, new_a_o } = a_i + b_i;
+      Sub:  { new_f_o, new_a_o } = a_i - b_i;
+      Mul: begin
+        product = a_i * b_i;
+        new_a_o = product[7:0];
+        new_f_o = |product[15:8];
       end
-      DIV: begin
-        if ($isunknown(cur_B))
-          { new_F, new_A, new_B } = 'x;
+      Div: begin
+        // TODO: Consider a divider that computes quotient and remainder
+        //       together, since separate / and % may synthesize to two dividers
+        if ($isunknown(b_i))  { new_f_o, new_a_o, new_b_o } = 'x;
+        else if (b_i == '0)   new_f_o = 1'b1;
         else begin
-          new_F = ( cur_B == '0 );
-          if (~new_F) begin
-            new_A = cur_A / cur_B;
-            new_B = cur_A % cur_B;
-          end
+          new_f_o = 1'b0;
+          new_a_o = a_i / b_i;
+          new_b_o = a_i % b_i;
         end
       end
-
-      INC:
-        { new_F, new_A } = cur_A + 1'b1;
+      Inc:  { new_f_o, new_a_o } = a_i + 9'b1;
 
       // Bitwise
-      INVA:
-        new_A = ~cur_A;
-      INVB:
-        new_B = ~cur_B;
-
-      AND:
-        new_A = cur_A & cur_B;
-      NAND:
-        new_A = ~(cur_A & cur_B);
-      OR:
-        new_A = cur_A | cur_B;
-      NOR:
-        new_A = ~(cur_A | cur_B);
-      XOR:
-        new_A = cur_A ^ cur_B;
-      XNOR:
-        new_A = ~(cur_A ^ cur_B);
-
-      SHL:
-        new_A = cur_A << cur_B;
-      SHR:
-        new_A = cur_A >> cur_B;
+      Inva: new_a_o = ~a_i;
+      Invb: new_b_o = ~b_i;
+      And:  new_a_o = a_i & b_i;
+      Nand: new_a_o = ~(a_i & b_i);
+      Or:   new_a_o = a_i | b_i;
+      Nor:  new_a_o = ~(a_i | b_i);
+      Xor:  new_a_o = a_i ^ b_i;
+      Xnor: new_a_o = ~(a_i ^ b_i);
+      Shl:  new_a_o = a_i << b_i;
+      Shr:  new_a_o = a_i >> b_i;
 
       // Conditions
-      EQ:
-        new_F = cur_A == cur_B;
-      NEQ:
-        new_F = ~(cur_A == cur_B);
-      LT:
-        new_F = cur_A < cur_B;
-      GT:
-        new_F = cur_A > cur_B;
-      LTE:
-        new_F = cur_A <= cur_B;
-      GTE:
-        new_F = cur_A >= cur_B;
-
-      CLF:
-        new_F = 0;
-      STF:
-        new_F = 1;
+      Eq:   new_f_o = a_i == b_i;
+      Neq:  new_f_o = a_i != b_i;
+      Lt:   new_f_o = a_i <  b_i;
+      Gt:   new_f_o = a_i >  b_i;
+      Lte:  new_f_o = a_i <= b_i;
+      Gte:  new_f_o = a_i >= b_i;
+      Clf:  new_f_o = 1'b0;
+      Stf:  new_f_o = 1'b1;
 
       // Misc
-      SWAP:
-        { new_A, new_B } = { cur_B, cur_A };
+      Swap: { new_a_o, new_b_o } = { b_i, a_i };
 
-      default:
-        { new_A, new_B, new_F } = 'x;
+      default: { new_a_o, new_b_o, new_f_o } = 'x;
     endcase
   end
 

@@ -7,66 +7,66 @@ module cu_tb;
   import opcodes::*;
   import tb_prefs::*;
 
-  localparam logic [13:0] BIT_NOTHING            = 14'b0;
-  localparam int          INDEX_RU_CS            = 0;
-  localparam logic [13:0] BIT_RU_CS              = 14'b1 << INDEX_RU_CS;
-  localparam int          INDEX_RU_JMP           = 1;
-  localparam logic [13:0] BIT_RU_JMP             = 14'b1 << INDEX_RU_JMP;
-  localparam int          INDEX_RU_JMP_COND      = 2;
-  localparam logic [13:0] BIT_RU_JMP_COND        = 14'b1 << INDEX_RU_JMP_COND;
-  localparam int          INDEX_RU_CALL          = 3;
-  localparam logic [13:0] BIT_RU_CALL            = 14'b1 << INDEX_RU_CALL;
-  localparam int          INDEX_RU_RET           = 4;
-  localparam logic [13:0] BIT_RU_RET             = 14'b1 << INDEX_RU_RET;
-  localparam int          INDEX_ALU_CS           = 5;
-  localparam logic [13:0] BIT_ALU_CS             = 14'b1 << INDEX_ALU_CS;
-  localparam int          INDEX_WU_CS            = 6;
-  localparam logic [13:0] BIT_WU_CS              = 14'b1 << INDEX_WU_CS;
-  localparam int          INDEX_WU_WRITE_AB      = 7;
-  localparam logic [13:0] BIT_WU_WRITE_AB        = 14'b1 << INDEX_WU_WRITE_AB;
-  localparam int          INDEX_WU_WRITE_AR      = 8;
-  localparam logic [13:0] BIT_WU_WRITE_AR        = 14'b1 << INDEX_WU_WRITE_AR;
-  localparam int          INDEX_WU_DO_TAR        = 9;
-  localparam logic [13:0] BIT_WU_DO_TAR          = 14'b1 << INDEX_WU_DO_TAR;
-  localparam int          INDEX_WU_LOAD          = 10;
-  localparam logic [13:0] BIT_WU_LOAD            = 14'b1 << INDEX_WU_LOAD;
-  localparam int          INDEX_WU_STORE         = 11;
-  localparam logic [13:0] BIT_WU_STORE           = 14'b1 << INDEX_WU_STORE;
-  localparam int          INDEX_WU_SIMPLE_LOAD   = 12;
-  localparam logic [13:0] BIT_WU_SIMPLE_LOAD     = 14'b1 << INDEX_WU_SIMPLE_LOAD;
-  localparam int          INDEX_WU_SIMPLE_STORE  = 13;
-  localparam logic [13:0] BIT_WU_SIMPLE_STORE    = 14'b1 << INDEX_WU_SIMPLE_STORE;
+  localparam logic [13:0] BitNothing         = 14'b0;
+  localparam int          IndexRuCs          = 0;
+  localparam logic [13:0] BitRuCs            = 14'b1 << IndexRuCs;
+  localparam int          IndexRuJmp         = 1;
+  localparam logic [13:0] BitRuJmp           = 14'b1 << IndexRuJmp;
+  localparam int          IndexRuJmpCond     = 2;
+  localparam logic [13:0] BitRuJmpCond       = 14'b1 << IndexRuJmpCond;
+  localparam int          IndexRuCall        = 3;
+  localparam logic [13:0] BitRuCall          = 14'b1 << IndexRuCall;
+  localparam int          IndexRuRet         = 4;
+  localparam logic [13:0] BitRuRet           = 14'b1 << IndexRuRet;
+  localparam int          IndexAluCs         = 5;
+  localparam logic [13:0] BitAluCs           = 14'b1 << IndexAluCs;
+  localparam int          IndexWuCs          = 6;
+  localparam logic [13:0] BitWuCs            = 14'b1 << IndexWuCs;
+  localparam int          IndexWuWriteAb     = 7;
+  localparam logic [13:0] BitWuWriteAb       = 14'b1 << IndexWuWriteAb;
+  localparam int          IndexWuWriteAr     = 8;
+  localparam logic [13:0] BitWuWriteAr       = 14'b1 << IndexWuWriteAr;
+  localparam int          IndexWuDoTar       = 9;
+  localparam logic [13:0] BitWuDoTar         = 14'b1 << IndexWuDoTar;
+  localparam int          IndexWuLoad        = 10;
+  localparam logic [13:0] BitWuLoad          = 14'b1 << IndexWuLoad;
+  localparam int          IndexWuStore       = 11;
+  localparam logic [13:0] BitWuStore         = 14'b1 << IndexWuStore;
+  localparam int          IndexWuSimpleLoad  = 12;
+  localparam logic [13:0] BitWuSimpleLoad    = 14'b1 << IndexWuSimpleLoad;
+  localparam int          IndexWuSimpleStore = 13;
+  localparam logic [13:0] BitWuSimpleStore   = 14'b1 << IndexWuSimpleStore;
 
-  localparam logic [7:0] DONT_CARE   = 8'hxx;
-  localparam logic [3:0] DONT_CARE_4 = 4'hx;
-  localparam logic       DONT_CARE_1 = 1'bx;
+  localparam logic [7:0] DontCare  = 8'hxx;
+  localparam logic [3:0] DontCare4 = 4'hx;
+  localparam logic       DontCare1 = 1'bx;
 
   // Inputs
-  logic [7:0] instr;
+  logic [7:0] instr_i;
 
   // Outputs
   logic [13:0] ctrl;
-  logic [7:0]  alu_opcode;
-  logic [7:0]  wu_new_A, wu_new_B, wu_new_AR;
-  logic        wu_use_A;
-  logic [7:0]  wu_mask, wu_mask_2;
-  logic [3:0]  wu_simple_addr;
+  logic [7:0]  alu_op_o;
+  logic [7:0]  wu_new_a_o, wu_new_b_o, wu_new_ar_o;
+  logic        wu_use_a_o;
+  logic [7:0]  wu_mask_a_o, wu_mask_b_o;
+  logic [3:0]  wu_simple_addr_o;
 
   cu dut (
-    .ru_cs           (ctrl[INDEX_RU_CS]),
-    .ru_jmp          (ctrl[INDEX_RU_JMP]),
-    .ru_jmp_cond     (ctrl[INDEX_RU_JMP_COND]),
-    .ru_call         (ctrl[INDEX_RU_CALL]),
-    .ru_ret          (ctrl[INDEX_RU_RET]),
-    .alu_cs          (ctrl[INDEX_ALU_CS]),
-    .wu_cs           (ctrl[INDEX_WU_CS]),
-    .wu_write_AB     (ctrl[INDEX_WU_WRITE_AB]),
-    .wu_write_AR     (ctrl[INDEX_WU_WRITE_AR]),
-    .wu_do_TAR       (ctrl[INDEX_WU_DO_TAR]),
-    .wu_load         (ctrl[INDEX_WU_LOAD]),
-    .wu_store        (ctrl[INDEX_WU_STORE]),
-    .wu_simple_load  (ctrl[INDEX_WU_SIMPLE_LOAD]),
-    .wu_simple_store (ctrl[INDEX_WU_SIMPLE_STORE]),
+    .ru_cs_o           (ctrl[IndexRuCs]),
+    .ru_jmp_o          (ctrl[IndexRuJmp]),
+    .ru_jmp_cond_o     (ctrl[IndexRuJmpCond]),
+    .ru_call_o         (ctrl[IndexRuCall]),
+    .ru_ret_o          (ctrl[IndexRuRet]),
+    .alu_cs_o          (ctrl[IndexAluCs]),
+    .wu_cs_o           (ctrl[IndexWuCs]),
+    .wu_write_ab_o     (ctrl[IndexWuWriteAb]),
+    .wu_write_ar_o     (ctrl[IndexWuWriteAr]),
+    .wu_do_tar_o       (ctrl[IndexWuDoTar]),
+    .wu_load_o         (ctrl[IndexWuLoad]),
+    .wu_store_o        (ctrl[IndexWuStore]),
+    .wu_simple_load_o  (ctrl[IndexWuSimpleLoad]),
+    .wu_simple_store_o (ctrl[IndexWuSimpleStore]),
     .*
   );
 
@@ -75,89 +75,89 @@ module cu_tb;
   task automatic check (
     input logic [7:0]  instruction,
     input logic [13:0] exp_ctrl,
-    input logic [7:0]  exp_opcode,
-    input logic [7:0]  exp_new_A,
-    input logic [7:0]  exp_new_B,
-    input logic [7:0]  exp_new_AR,
-    input logic        exp_use_A,
-    input logic [7:0]  exp_mask,
-    input logic [7:0]  exp_mask_2,
+    input logic [7:0]  exp_op,
+    input logic [7:0]  exp_new_a,
+    input logic [7:0]  exp_new_b,
+    input logic [7:0]  exp_new_ar,
+    input logic        exp_use_a,
+    input logic [7:0]  exp_mask_a,
+    input logic [7:0]  exp_mask_b,
     input logic [3:0]  exp_s_addr
   );
-    instr = instruction;
+    instr_i = instruction;
 
     #1;
     assert (ctrl === exp_ctrl) else begin
       errors++;
-      if (errors <= ERRORS_CAP)
-        $error("instr=%b: Expected ctrl=%b, got %b", instr, exp_ctrl, ctrl);
+      if (errors <= ErrorsCap)
+        $error("instr=%b: Expected ctrl=%b, got %b", instr_i, exp_ctrl, ctrl);
     end
 
-    if (exp_opcode !== DONT_CARE)
-      assert (alu_opcode === exp_opcode) else begin
+    if (exp_op !== DontCare)
+      assert (alu_op_o === exp_op) else begin
         errors++;
-        if (errors <= ERRORS_CAP)
-          $error("instr=%b: Expected alu_opcode=%h, got %h", instr, exp_opcode, alu_opcode);
+        if (errors <= ErrorsCap)
+          $error("instr=%b: Expected alu_op_o=%h, got %h", instr_i, exp_op, alu_op_o);
       end
 
     // Only the bits under the mask reach the register
-    if (exp_new_A !== DONT_CARE)
-      assert ((wu_new_A & exp_mask) === (exp_new_A & exp_mask)) else begin
+    if (exp_new_a !== DontCare)
+      assert ((wu_new_a_o & exp_mask_a) === (exp_new_a & exp_mask_a)) else begin
         errors++;
-        if (errors <= ERRORS_CAP)
-          $error("instr=%b: Expected wu_new_A=%h, got %h", instr, exp_new_A, wu_new_A);
+        if (errors <= ErrorsCap)
+          $error("instr=%b: Expected wu_new_a_o=%h, got %h", instr_i, exp_new_a, wu_new_a_o);
       end
 
-    if (exp_new_B !== DONT_CARE)
-      assert ((wu_new_B & exp_mask_2) === (exp_new_B & exp_mask_2)) else begin
+    if (exp_new_b !== DontCare)
+      assert ((wu_new_b_o & exp_mask_b) === (exp_new_b & exp_mask_b)) else begin
         errors++;
-        if (errors <= ERRORS_CAP)
-          $error("instr=%b: Expected wu_new_B=%h, got %h", instr, exp_new_B, wu_new_B);
+        if (errors <= ErrorsCap)
+          $error("instr=%b: Expected wu_new_b_o=%h, got %h", instr_i, exp_new_b, wu_new_b_o);
       end
 
-    if (exp_new_AR !== DONT_CARE)
-      assert ((wu_new_AR & exp_mask) === (exp_new_AR & exp_mask)) else begin
+    if (exp_new_ar !== DontCare)
+      assert ((wu_new_ar_o & exp_mask_a) === (exp_new_ar & exp_mask_a)) else begin
         errors++;
-        if (errors <= ERRORS_CAP)
-          $error("instr=%b: Expected wu_new_AR=%h, got %h", instr, exp_new_AR, wu_new_AR);
+        if (errors <= ErrorsCap)
+          $error("instr=%b: Expected wu_new_ar_o=%h, got %h", instr_i, exp_new_ar, wu_new_ar_o);
       end
 
-    if (exp_use_A !== DONT_CARE_1)
-      assert (wu_use_A === exp_use_A) else begin
+    if (exp_use_a !== DontCare1)
+      assert (wu_use_a_o === exp_use_a) else begin
         errors++;
-        if (errors <= ERRORS_CAP)
-          $error("instr=%b: Expected wu_use_A=%b, got %b", instr, exp_use_A, wu_use_A);
+        if (errors <= ErrorsCap)
+          $error("instr=%b: Expected wu_use_a_o=%b, got %b", instr_i, exp_use_a, wu_use_a_o);
       end
 
-    if (exp_mask !== DONT_CARE)
-      assert (wu_mask === exp_mask) else begin
+    if (exp_mask_a !== DontCare)
+      assert (wu_mask_a_o === exp_mask_a) else begin
         errors++;
-        if (errors <= ERRORS_CAP)
-          $error("instr=%b: Expected wu_mask=%h, got %h", instr, exp_mask, wu_mask);
+        if (errors <= ErrorsCap)
+          $error("instr=%b: Expected wu_mask_a_o=%h, got %h", instr_i, exp_mask_a, wu_mask_a_o);
       end
 
-    if (exp_mask_2 !== DONT_CARE)
-      assert (wu_mask_2 === exp_mask_2) else begin
+    if (exp_mask_b !== DontCare)
+      assert (wu_mask_b_o === exp_mask_b) else begin
         errors++;
-        if (errors <= ERRORS_CAP)
-          $error("instr=%b: Expected wu_mask_2=%h, got %h", instr, exp_mask_2, wu_mask_2);
+        if (errors <= ErrorsCap)
+          $error("instr=%b: Expected wu_mask_b_o=%h, got %h", instr_i, exp_mask_b, wu_mask_b_o);
       end
 
-    if (exp_s_addr !== DONT_CARE_4)
-      assert (wu_simple_addr === exp_s_addr) else begin
+    if (exp_s_addr !== DontCare4)
+      assert (wu_simple_addr_o === exp_s_addr) else begin
         errors++;
-        if (errors <= ERRORS_CAP)
-          $error("instr=%b: Expected wu_simple_addr=%h, got %h", instr, exp_s_addr, wu_simple_addr);
+        if (errors <= ErrorsCap)
+          $error("instr=%b: Expected wu_simple_addr_o=%h, got %h", instr_i, exp_s_addr, wu_simple_addr_o);
       end
   endtask
 
   task automatic check_unknown ();
     #1;
-    assert ({ ctrl, alu_opcode, wu_new_A, wu_new_B, wu_new_AR, wu_use_A, wu_mask, wu_mask_2, wu_simple_addr } === 'x) else begin
+    assert ({ ctrl, alu_op_o, wu_new_a_o, wu_new_b_o, wu_new_ar_o, wu_use_a_o, wu_mask_a_o, wu_mask_b_o, wu_simple_addr_o } === 'x) else begin
       errors++;
-      if (errors <= ERRORS_CAP)
-        $error("instr=%b: Expected every output x, got ctrl=%b alu_opcode=%h wu_new_A=%h wu_new_B=%h wu_new_AR=%h wu_use_A=%b wu_mask=%h wu_mask_2=%h wu_simple_addr=%h",
-               instr, ctrl, alu_opcode, wu_new_A, wu_new_B, wu_new_AR, wu_use_A, wu_mask, wu_mask_2, wu_simple_addr);
+      if (errors <= ErrorsCap)
+        $error("instr=%b: Expected every output x, got ctrl=%b alu_op_o=%h wu_new_a_o=%h wu_new_b_o=%h wu_new_ar_o=%h wu_use_a_o=%b wu_mask_a_o=%h wu_mask_b_o=%h wu_simple_addr_o=%h",
+               instr_i, ctrl, alu_op_o, wu_new_a_o, wu_new_b_o, wu_new_ar_o, wu_use_a_o, wu_mask_a_o, wu_mask_b_o, wu_simple_addr_o);
     end
   endtask
 
@@ -168,259 +168,259 @@ module cu_tb;
     $display("Testing immediates");
     for (int imm = 0; imm < 16; imm++) begin
       check(
-        /* .instruction */ ({ ILA[7:4], 4'(imm) }),
-        /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_WRITE_AB),
-        /* .exp_opcode  */ (DONT_CARE),
-        /* .exp_new_A   */ ({ 4'hx, 4'(imm) }),
-        /* .exp_new_B   */ (DONT_CARE),
-        /* .exp_new_AR  */ (DONT_CARE),
-        /* .exp_use_A   */ (DONT_CARE_1),
-        /* .exp_mask    */ (8'h0F),
-        /* .exp_mask_2  */ (8'h00),
-        /* .exp_s_addr  */ (DONT_CARE_4)
+        /* .instruction */ ({ Ila[7:4], 4'(imm) }),
+        /* .exp_ctrl    */ (BitWuCs | BitWuWriteAb),
+        /* .exp_op      */ (DontCare),
+        /* .exp_new_a   */ ({ 4'hx, 4'(imm) }),
+        /* .exp_new_b   */ (DontCare),
+        /* .exp_new_ar  */ (DontCare),
+        /* .exp_use_a   */ (DontCare1),
+        /* .exp_mask_a  */ (8'h0F),
+        /* .exp_mask_b  */ (8'h00),
+        /* .exp_s_addr  */ (DontCare4)
       );
       check(
-        /* .instruction */ ({ ILB[7:4], 4'(imm) }),
-        /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_WRITE_AB),
-        /* .exp_opcode  */ (DONT_CARE),
-        /* .exp_new_A   */ (DONT_CARE),
-        /* .exp_new_B   */ ({ 4'hx, 4'(imm) }),
-        /* .exp_new_AR  */ (DONT_CARE),
-        /* .exp_use_A   */ (DONT_CARE_1),
-        /* .exp_mask    */ (8'h00),
-        /* .exp_mask_2  */ (8'h0F),
-        /* .exp_s_addr  */ (DONT_CARE_4)
+        /* .instruction */ ({ Ilb[7:4], 4'(imm) }),
+        /* .exp_ctrl    */ (BitWuCs | BitWuWriteAb),
+        /* .exp_op      */ (DontCare),
+        /* .exp_new_a   */ (DontCare),
+        /* .exp_new_b   */ ({ 4'hx, 4'(imm) }),
+        /* .exp_new_ar  */ (DontCare),
+        /* .exp_use_a   */ (DontCare1),
+        /* .exp_mask_a  */ (8'h00),
+        /* .exp_mask_b  */ (8'h0F),
+        /* .exp_s_addr  */ (DontCare4)
       );
       check(
-        /* .instruction */ ({ IHA[7:4], 4'(imm) }),
-        /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_WRITE_AB),
-        /* .exp_opcode  */ (DONT_CARE),
-        /* .exp_new_A   */ ({ 4'(imm), 4'hx }),
-        /* .exp_new_B   */ (DONT_CARE),
-        /* .exp_new_AR  */ (DONT_CARE),
-        /* .exp_use_A   */ (DONT_CARE_1),
-        /* .exp_mask    */ (8'hF0),
-        /* .exp_mask_2  */ (8'h00),
-        /* .exp_s_addr  */ (DONT_CARE_4)
+        /* .instruction */ ({ Iha[7:4], 4'(imm) }),
+        /* .exp_ctrl    */ (BitWuCs | BitWuWriteAb),
+        /* .exp_op      */ (DontCare),
+        /* .exp_new_a   */ ({ 4'(imm), 4'hx }),
+        /* .exp_new_b   */ (DontCare),
+        /* .exp_new_ar  */ (DontCare),
+        /* .exp_use_a   */ (DontCare1),
+        /* .exp_mask_a  */ (8'hF0),
+        /* .exp_mask_b  */ (8'h00),
+        /* .exp_s_addr  */ (DontCare4)
       );
       check(
-        /* .instruction */ ({ IHB[7:4], 4'(imm) }),
-        /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_WRITE_AB),
-        /* .exp_opcode  */ (DONT_CARE),
-        /* .exp_new_A   */ (DONT_CARE),
-        /* .exp_new_B   */ ({ 4'(imm), 4'hx }),
-        /* .exp_new_AR  */ (DONT_CARE),
-        /* .exp_use_A   */ (DONT_CARE_1),
-        /* .exp_mask    */ (8'h00),
-        /* .exp_mask_2  */ (8'hF0),
-        /* .exp_s_addr  */ (DONT_CARE_4)
+        /* .instruction */ ({ Ihb[7:4], 4'(imm) }),
+        /* .exp_ctrl    */ (BitWuCs | BitWuWriteAb),
+        /* .exp_op      */ (DontCare),
+        /* .exp_new_a   */ (DontCare),
+        /* .exp_new_b   */ ({ 4'(imm), 4'hx }),
+        /* .exp_new_ar  */ (DontCare),
+        /* .exp_use_a   */ (DontCare1),
+        /* .exp_mask_a  */ (8'h00),
+        /* .exp_mask_b  */ (8'hF0),
+        /* .exp_s_addr  */ (DontCare4)
       );
       check(
-        /* .instruction */ ({ ALO[7:4], 4'(imm) }),
-        /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_WRITE_AR),
-        /* .exp_opcode  */ (DONT_CARE),
-        /* .exp_new_A   */ (DONT_CARE),
-        /* .exp_new_B   */ (DONT_CARE),
-        /* .exp_new_AR  */ ({ 4'hx, 4'(imm) }),
-        /* .exp_use_A   */ (DONT_CARE_1),
-        /* .exp_mask    */ (8'h0F),
-        /* .exp_mask_2  */ (DONT_CARE),
-        /* .exp_s_addr  */ (DONT_CARE_4)
+        /* .instruction */ ({ Alo[7:4], 4'(imm) }),
+        /* .exp_ctrl    */ (BitWuCs | BitWuWriteAr),
+        /* .exp_op      */ (DontCare),
+        /* .exp_new_a   */ (DontCare),
+        /* .exp_new_b   */ (DontCare),
+        /* .exp_new_ar  */ ({ 4'hx, 4'(imm) }),
+        /* .exp_use_a   */ (DontCare1),
+        /* .exp_mask_a  */ (8'h0F),
+        /* .exp_mask_b  */ (DontCare),
+        /* .exp_s_addr  */ (DontCare4)
       );
       check(
-        /* .instruction */ ({ AHI[7:4], 4'(imm) }),
-        /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_WRITE_AR),
-        /* .exp_opcode  */ (DONT_CARE),
-        /* .exp_new_A   */ (DONT_CARE),
-        /* .exp_new_B   */ (DONT_CARE),
-        /* .exp_new_AR  */ ({ 4'(imm), 4'hx }),
-        /* .exp_use_A   */ (DONT_CARE_1),
-        /* .exp_mask    */ (8'hF0),
-        /* .exp_mask_2  */ (DONT_CARE),
-        /* .exp_s_addr  */ (DONT_CARE_4)
+        /* .instruction */ ({ Ahi[7:4], 4'(imm) }),
+        /* .exp_ctrl    */ (BitWuCs | BitWuWriteAr),
+        /* .exp_op      */ (DontCare),
+        /* .exp_new_a   */ (DontCare),
+        /* .exp_new_b   */ (DontCare),
+        /* .exp_new_ar  */ ({ 4'(imm), 4'hx }),
+        /* .exp_use_a   */ (DontCare1),
+        /* .exp_mask_a  */ (8'hF0),
+        /* .exp_mask_b  */ (DontCare),
+        /* .exp_s_addr  */ (DontCare4)
       );
     end
 
     $display("Testing simple loads and stores");
     for (int imm = 0; imm < 16; imm++) begin
       check(
-        /* .instruction */ ({ SLDA[7:4], 4'(imm) }),
-        /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_SIMPLE_LOAD),
-        /* .exp_opcode  */ (DONT_CARE),
-        /* .exp_new_A   */ (DONT_CARE),
-        /* .exp_new_B   */ (DONT_CARE),
-        /* .exp_new_AR  */ (DONT_CARE),
-        /* .exp_use_A   */ ('1),
-        /* .exp_mask    */ (DONT_CARE),
-        /* .exp_mask_2  */ (DONT_CARE),
+        /* .instruction */ ({ Slda[7:4], 4'(imm) }),
+        /* .exp_ctrl    */ (BitWuCs | BitWuSimpleLoad),
+        /* .exp_op      */ (DontCare),
+        /* .exp_new_a   */ (DontCare),
+        /* .exp_new_b   */ (DontCare),
+        /* .exp_new_ar  */ (DontCare),
+        /* .exp_use_a   */ ('1),
+        /* .exp_mask_a  */ (DontCare),
+        /* .exp_mask_b  */ (DontCare),
         /* .exp_s_addr  */ (4'(imm))
       );
       check(
-        /* .instruction */ ({ SLDB[7:4], 4'(imm) }),
-        /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_SIMPLE_LOAD),
-        /* .exp_opcode  */ (DONT_CARE),
-        /* .exp_new_A   */ (DONT_CARE),
-        /* .exp_new_B   */ (DONT_CARE),
-        /* .exp_new_AR  */ (DONT_CARE),
-        /* .exp_use_A   */ ('0),
-        /* .exp_mask    */ (DONT_CARE),
-        /* .exp_mask_2  */ (DONT_CARE),
+        /* .instruction */ ({ Sldb[7:4], 4'(imm) }),
+        /* .exp_ctrl    */ (BitWuCs | BitWuSimpleLoad),
+        /* .exp_op      */ (DontCare),
+        /* .exp_new_a   */ (DontCare),
+        /* .exp_new_b   */ (DontCare),
+        /* .exp_new_ar  */ (DontCare),
+        /* .exp_use_a   */ ('0),
+        /* .exp_mask_a  */ (DontCare),
+        /* .exp_mask_b  */ (DontCare),
         /* .exp_s_addr  */ (4'(imm))
       );
       check(
-        /* .instruction */ ({ SSTA[7:4], 4'(imm) }),
-        /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_SIMPLE_STORE),
-        /* .exp_opcode  */ (DONT_CARE),
-        /* .exp_new_A   */ (DONT_CARE),
-        /* .exp_new_B   */ (DONT_CARE),
-        /* .exp_new_AR  */ (DONT_CARE),
-        /* .exp_use_A   */ ('1),
-        /* .exp_mask    */ (DONT_CARE),
-        /* .exp_mask_2  */ (DONT_CARE),
+        /* .instruction */ ({ Ssta[7:4], 4'(imm) }),
+        /* .exp_ctrl    */ (BitWuCs | BitWuSimpleStore),
+        /* .exp_op      */ (DontCare),
+        /* .exp_new_a   */ (DontCare),
+        /* .exp_new_b   */ (DontCare),
+        /* .exp_new_ar  */ (DontCare),
+        /* .exp_use_a   */ ('1),
+        /* .exp_mask_a  */ (DontCare),
+        /* .exp_mask_b  */ (DontCare),
         /* .exp_s_addr  */ (4'(imm))
       );
       check(
-        /* .instruction */ ({ SSTB[7:4], 4'(imm) }),
-        /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_SIMPLE_STORE),
-        /* .exp_opcode  */ (DONT_CARE),
-        /* .exp_new_A   */ (DONT_CARE),
-        /* .exp_new_B   */ (DONT_CARE),
-        /* .exp_new_AR  */ (DONT_CARE),
-        /* .exp_use_A   */ ('0),
-        /* .exp_mask    */ (DONT_CARE),
-        /* .exp_mask_2  */ (DONT_CARE),
+        /* .instruction */ ({ Sstb[7:4], 4'(imm) }),
+        /* .exp_ctrl    */ (BitWuCs | BitWuSimpleStore),
+        /* .exp_op      */ (DontCare),
+        /* .exp_new_a   */ (DontCare),
+        /* .exp_new_b   */ (DontCare),
+        /* .exp_new_ar  */ (DontCare),
+        /* .exp_use_a   */ ('0),
+        /* .exp_mask_a  */ (DontCare),
+        /* .exp_mask_b  */ (DontCare),
         /* .exp_s_addr  */ (4'(imm))
       );
     end
 
     $display("Testing loads and stores");
     check(
-      /* .instruction */ (LDA),
-      /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_LOAD),
-      /* .exp_opcode  */ (DONT_CARE),
-      /* .exp_new_A   */ (DONT_CARE),
-      /* .exp_new_B   */ (DONT_CARE),
-      /* .exp_new_AR  */ (DONT_CARE),
-      /* .exp_use_A   */ ('1),
-      /* .exp_mask    */ (DONT_CARE),
-      /* .exp_mask_2  */ (DONT_CARE),
-      /* .exp_s_addr  */ (DONT_CARE_4)
+      /* .instruction */ (Lda),
+      /* .exp_ctrl    */ (BitWuCs | BitWuLoad),
+      /* .exp_op      */ (DontCare),
+      /* .exp_new_a   */ (DontCare),
+      /* .exp_new_b   */ (DontCare),
+      /* .exp_new_ar  */ (DontCare),
+      /* .exp_use_a   */ ('1),
+      /* .exp_mask_a  */ (DontCare),
+      /* .exp_mask_b  */ (DontCare),
+      /* .exp_s_addr  */ (DontCare4)
     );
     check(
-      /* .instruction */ (LDB),
-      /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_LOAD),
-      /* .exp_opcode  */ (DONT_CARE),
-      /* .exp_new_A   */ (DONT_CARE),
-      /* .exp_new_B   */ (DONT_CARE),
-      /* .exp_new_AR  */ (DONT_CARE),
-      /* .exp_use_A   */ ('0),
-      /* .exp_mask    */ (DONT_CARE),
-      /* .exp_mask_2  */ (DONT_CARE),
-      /* .exp_s_addr  */ (DONT_CARE_4)
+      /* .instruction */ (Ldb),
+      /* .exp_ctrl    */ (BitWuCs | BitWuLoad),
+      /* .exp_op      */ (DontCare),
+      /* .exp_new_a   */ (DontCare),
+      /* .exp_new_b   */ (DontCare),
+      /* .exp_new_ar  */ (DontCare),
+      /* .exp_use_a   */ ('0),
+      /* .exp_mask_a  */ (DontCare),
+      /* .exp_mask_b  */ (DontCare),
+      /* .exp_s_addr  */ (DontCare4)
     );
     check(
-      /* .instruction */ (STA),
-      /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_STORE),
-      /* .exp_opcode  */ (DONT_CARE),
-      /* .exp_new_A   */ (DONT_CARE),
-      /* .exp_new_B   */ (DONT_CARE),
-      /* .exp_new_AR  */ (DONT_CARE),
-      /* .exp_use_A   */ ('1),
-      /* .exp_mask    */ (DONT_CARE),
-      /* .exp_mask_2  */ (DONT_CARE),
-      /* .exp_s_addr  */ (DONT_CARE_4)
+      /* .instruction */ (Sta),
+      /* .exp_ctrl    */ (BitWuCs | BitWuStore),
+      /* .exp_op      */ (DontCare),
+      /* .exp_new_a   */ (DontCare),
+      /* .exp_new_b   */ (DontCare),
+      /* .exp_new_ar  */ (DontCare),
+      /* .exp_use_a   */ ('1),
+      /* .exp_mask_a  */ (DontCare),
+      /* .exp_mask_b  */ (DontCare),
+      /* .exp_s_addr  */ (DontCare4)
     );
     check(
-      /* .instruction */ (STB),
-      /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_STORE),
-      /* .exp_opcode  */ (DONT_CARE),
-      /* .exp_new_A   */ (DONT_CARE),
-      /* .exp_new_B   */ (DONT_CARE),
-      /* .exp_new_AR  */ (DONT_CARE),
-      /* .exp_use_A   */ ('0),
-      /* .exp_mask    */ (DONT_CARE),
-      /* .exp_mask_2  */ (DONT_CARE),
-      /* .exp_s_addr  */ (DONT_CARE_4)
+      /* .instruction */ (Stb),
+      /* .exp_ctrl    */ (BitWuCs | BitWuStore),
+      /* .exp_op      */ (DontCare),
+      /* .exp_new_a   */ (DontCare),
+      /* .exp_new_b   */ (DontCare),
+      /* .exp_new_ar  */ (DontCare),
+      /* .exp_use_a   */ ('0),
+      /* .exp_mask_a  */ (DontCare),
+      /* .exp_mask_b  */ (DontCare),
+      /* .exp_s_addr  */ (DontCare4)
     );
 
     $display("Testing TAR");
     check(
-      /* .instruction */ (TAR),
-      /* .exp_ctrl    */ (BIT_WU_CS | BIT_WU_DO_TAR),
-      /* .exp_opcode  */ (DONT_CARE),
-      /* .exp_new_A   */ (DONT_CARE),
-      /* .exp_new_B   */ (DONT_CARE),
-      /* .exp_new_AR  */ (DONT_CARE),
-      /* .exp_use_A   */ (DONT_CARE_1),
-      /* .exp_mask    */ (DONT_CARE),
-      /* .exp_mask_2  */ (DONT_CARE),
-      /* .exp_s_addr  */ (DONT_CARE_4)
+      /* .instruction */ (Tar),
+      /* .exp_ctrl    */ (BitWuCs | BitWuDoTar),
+      /* .exp_op      */ (DontCare),
+      /* .exp_new_a   */ (DontCare),
+      /* .exp_new_b   */ (DontCare),
+      /* .exp_new_ar  */ (DontCare),
+      /* .exp_use_a   */ (DontCare1),
+      /* .exp_mask_a  */ (DontCare),
+      /* .exp_mask_b  */ (DontCare),
+      /* .exp_s_addr  */ (DontCare4)
     );
 
     $display("Testing ALU instructions");
-    for (int op = int'(INVA); op <= int'(STF); op++) begin
+    for (int op = int'(Inva); op <= int'(Stf); op++) begin
       check(
         /* .instruction */ (8'(op)),
-        /* .exp_ctrl    */ (BIT_ALU_CS),
-        /* .exp_opcode  */ (8'(op)),
-        /* .exp_new_A   */ (DONT_CARE),
-        /* .exp_new_B   */ (DONT_CARE),
-        /* .exp_new_AR  */ (DONT_CARE),
-        /* .exp_use_A   */ (DONT_CARE_1),
-        /* .exp_mask    */ (DONT_CARE),
-        /* .exp_mask_2  */ (DONT_CARE),
-        /* .exp_s_addr  */ (DONT_CARE_4)
+        /* .exp_ctrl    */ (BitAluCs),
+        /* .exp_op      */ (8'(op)),
+        /* .exp_new_a   */ (DontCare),
+        /* .exp_new_b   */ (DontCare),
+        /* .exp_new_ar  */ (DontCare),
+        /* .exp_use_a   */ (DontCare1),
+        /* .exp_mask_a  */ (DontCare),
+        /* .exp_mask_b  */ (DontCare),
+        /* .exp_s_addr  */ (DontCare4)
       );
     end
 
     $display("Testing RU instructions");
     check(
-      /* .instruction */ (JMP),
-      /* .exp_ctrl    */ (BIT_RU_CS | BIT_RU_JMP),
-      /* .exp_opcode  */ (DONT_CARE),
-      /* .exp_new_A   */ (DONT_CARE),
-      /* .exp_new_B   */ (DONT_CARE),
-      /* .exp_new_AR  */ (DONT_CARE),
-      /* .exp_use_A   */ (DONT_CARE_1),
-      /* .exp_mask    */ (DONT_CARE),
-      /* .exp_mask_2  */ (DONT_CARE),
-      /* .exp_s_addr  */ (DONT_CARE_4)
+      /* .instruction */ (Jmp),
+      /* .exp_ctrl    */ (BitRuCs | BitRuJmp),
+      /* .exp_op      */ (DontCare),
+      /* .exp_new_a   */ (DontCare),
+      /* .exp_new_b   */ (DontCare),
+      /* .exp_new_ar  */ (DontCare),
+      /* .exp_use_a   */ (DontCare1),
+      /* .exp_mask_a  */ (DontCare),
+      /* .exp_mask_b  */ (DontCare),
+      /* .exp_s_addr  */ (DontCare4)
     );
     check(
-      /* .instruction */ (JF),
-      /* .exp_ctrl    */ (BIT_RU_CS | BIT_RU_JMP | BIT_RU_JMP_COND),
-      /* .exp_opcode  */ (DONT_CARE),
-      /* .exp_new_A   */ (DONT_CARE),
-      /* .exp_new_B   */ (DONT_CARE),
-      /* .exp_new_AR  */ (DONT_CARE),
-      /* .exp_use_A   */ (DONT_CARE_1),
-      /* .exp_mask    */ (DONT_CARE),
-      /* .exp_mask_2  */ (DONT_CARE),
-      /* .exp_s_addr  */ (DONT_CARE_4)
+      /* .instruction */ (Jf),
+      /* .exp_ctrl    */ (BitRuCs | BitRuJmp | BitRuJmpCond),
+      /* .exp_op      */ (DontCare),
+      /* .exp_new_a   */ (DontCare),
+      /* .exp_new_b   */ (DontCare),
+      /* .exp_new_ar  */ (DontCare),
+      /* .exp_use_a   */ (DontCare1),
+      /* .exp_mask_a  */ (DontCare),
+      /* .exp_mask_b  */ (DontCare),
+      /* .exp_s_addr  */ (DontCare4)
     );
     check(
-      /* .instruction */ (CALL),
-      /* .exp_ctrl    */ (BIT_RU_CS | BIT_RU_CALL),
-      /* .exp_opcode  */ (DONT_CARE),
-      /* .exp_new_A   */ (DONT_CARE),
-      /* .exp_new_B   */ (DONT_CARE),
-      /* .exp_new_AR  */ (DONT_CARE),
-      /* .exp_use_A   */ (DONT_CARE_1),
-      /* .exp_mask    */ (DONT_CARE),
-      /* .exp_mask_2  */ (DONT_CARE),
-      /* .exp_s_addr  */ (DONT_CARE_4)
+      /* .instruction */ (Call),
+      /* .exp_ctrl    */ (BitRuCs | BitRuCall),
+      /* .exp_op      */ (DontCare),
+      /* .exp_new_a   */ (DontCare),
+      /* .exp_new_b   */ (DontCare),
+      /* .exp_new_ar  */ (DontCare),
+      /* .exp_use_a   */ (DontCare1),
+      /* .exp_mask_a  */ (DontCare),
+      /* .exp_mask_b  */ (DontCare),
+      /* .exp_s_addr  */ (DontCare4)
     );
     check(
-      /* .instruction */ (RET),
-      /* .exp_ctrl    */ (BIT_RU_CS | BIT_RU_RET),
-      /* .exp_opcode  */ (DONT_CARE),
-      /* .exp_new_A   */ (DONT_CARE),
-      /* .exp_new_B   */ (DONT_CARE),
-      /* .exp_new_AR  */ (DONT_CARE),
-      /* .exp_use_A   */ (DONT_CARE_1),
-      /* .exp_mask    */ (DONT_CARE),
-      /* .exp_mask_2  */ (DONT_CARE),
-      /* .exp_s_addr  */ (DONT_CARE_4)
+      /* .instruction */ (Ret),
+      /* .exp_ctrl    */ (BitRuCs | BitRuRet),
+      /* .exp_op      */ (DontCare),
+      /* .exp_new_a   */ (DontCare),
+      /* .exp_new_b   */ (DontCare),
+      /* .exp_new_ar  */ (DontCare),
+      /* .exp_use_a   */ (DontCare1),
+      /* .exp_mask_a  */ (DontCare),
+      /* .exp_mask_b  */ (DontCare),
+      /* .exp_s_addr  */ (DontCare4)
     );
 
     $display("Testing undefined opcodes");
@@ -430,33 +430,33 @@ module cu_tb;
           (op >= 8'hD0 && op <= 8'hD7) || (op >= 8'hD9 && op <= 8'hDB)) begin
         check(
           /* .instruction */ (8'(op)),
-          /* .exp_ctrl    */ (BIT_NOTHING),
-          /* .exp_opcode  */ (DONT_CARE),
-          /* .exp_new_A   */ (DONT_CARE),
-          /* .exp_new_B   */ (DONT_CARE),
-          /* .exp_new_AR  */ (DONT_CARE),
-          /* .exp_use_A   */ (DONT_CARE_1),
-          /* .exp_mask    */ (DONT_CARE),
-          /* .exp_mask_2  */ (DONT_CARE),
-          /* .exp_s_addr  */ (DONT_CARE_4)
+          /* .exp_ctrl    */ (BitNothing),
+          /* .exp_op      */ (DontCare),
+          /* .exp_new_a   */ (DontCare),
+          /* .exp_new_b   */ (DontCare),
+          /* .exp_new_ar  */ (DontCare),
+          /* .exp_use_a   */ (DontCare1),
+          /* .exp_mask_a  */ (DontCare),
+          /* .exp_mask_b  */ (DontCare),
+          /* .exp_s_addr  */ (DontCare4)
         );
       end
     end
 
     $display("Testing unknown instructions");
-    instr = 8'hxx;
+    instr_i = 8'hxx;
     check_unknown();
 
-    instr = 8'hzz;
+    instr_i = 8'hzz;
     check_unknown();
 
     for (int op = 0; op < 256; op++) begin
       for (int i = 0; i < 8; i++) begin
-        instr = 8'(op);
-        instr[i] = 1'bx;
+        instr_i = 8'(op);
+        instr_i[i] = 1'bx;
         check_unknown();
 
-        instr[i] = 1'bz;
+        instr_i[i] = 1'bz;
         check_unknown();
       end
     end

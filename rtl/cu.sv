@@ -1,169 +1,172 @@
-/* ================ CU Implementation ================
- * Simple combinational CU as per spec
- * ====================================================
+/* ================ CU ================
+ * Control unit: decodes the instruction byte into unit commands
+ * ====================================
  */
 
 module cu (
-  input  logic [7:0] instr,
+  input  logic [7:0] instr_i,
 
-  output logic       ru_cs,
-  output logic       ru_jmp,
-  output logic       ru_jmp_cond,
-  output logic       ru_call,
-  output logic       ru_ret,
+  output logic       ru_cs_o,
+  output logic       ru_jmp_o,
+  output logic       ru_jmp_cond_o,
+  output logic       ru_call_o,
+  output logic       ru_ret_o,
 
-  output logic       alu_cs,
-  output logic [7:0] alu_opcode,
+  output logic       alu_cs_o,
+  output logic [7:0] alu_op_o,
 
-  output logic       wu_cs,
-  output logic [7:0] wu_new_A,
-  output logic [7:0] wu_new_B,
-  output logic       wu_write_AB,
-  output logic [7:0] wu_new_AR,
-  output logic       wu_write_AR,
-  output logic       wu_do_TAR,
-  output logic       wu_use_A,
-  output logic [7:0] wu_mask,
-  output logic [7:0] wu_mask_2,
-  output logic       wu_load,
-  output logic       wu_store,
-  output logic [3:0] wu_simple_addr,
-  output logic       wu_simple_load,
-  output logic       wu_simple_store
+  output logic       wu_cs_o,
+  output logic [7:0] wu_new_a_o,
+  output logic [7:0] wu_new_b_o,
+  output logic       wu_write_ab_o,
+  output logic [7:0] wu_new_ar_o,
+  output logic       wu_write_ar_o,
+  output logic       wu_do_tar_o,
+  output logic       wu_use_a_o,
+  output logic [7:0] wu_mask_a_o,
+  output logic [7:0] wu_mask_b_o,
+  output logic       wu_load_o,
+  output logic       wu_store_o,
+  output logic [3:0] wu_simple_addr_o,
+  output logic       wu_simple_load_o,
+  output logic       wu_simple_store_o
 );
 
-  // Import opcodes package
   import opcodes::*;
 
-  // Combinational
   always_comb begin
-    if (!$isunknown(instr)) begin
-      { ru_cs, ru_jmp, ru_jmp_cond, ru_call, ru_ret } = '0;
-      { alu_cs, alu_opcode } = '0;
-      { wu_cs, wu_new_A, wu_new_B, wu_write_AB, wu_new_AR, wu_write_AR, wu_do_TAR, wu_use_A, wu_mask, wu_mask_2, wu_load, wu_store, wu_simple_addr, wu_simple_load, wu_simple_store } = '0;
-      unique casez (instr)
+    if ($isunknown(instr_i)) begin
+      { ru_cs_o, ru_jmp_o, ru_jmp_cond_o, ru_call_o, ru_ret_o } = 'x;
+      { alu_cs_o, alu_op_o } = 'x;
+      { wu_cs_o, wu_new_a_o, wu_new_b_o, wu_write_ab_o, wu_new_ar_o, wu_write_ar_o, wu_do_tar_o, wu_use_a_o,
+        wu_mask_a_o, wu_mask_b_o, wu_load_o, wu_store_o,
+        wu_simple_addr_o, wu_simple_load_o, wu_simple_store_o } = 'x;
+    end else begin
+      { ru_cs_o, ru_jmp_o, ru_jmp_cond_o, ru_call_o, ru_ret_o } = '0;
+      { alu_cs_o, alu_op_o } = '0;
+      { wu_cs_o, wu_new_a_o, wu_new_b_o, wu_write_ab_o, wu_new_ar_o, wu_write_ar_o, wu_do_tar_o, wu_use_a_o,
+        wu_mask_a_o, wu_mask_b_o, wu_load_o, wu_store_o,
+        wu_simple_addr_o, wu_simple_load_o, wu_simple_store_o } = '0;
+
+      unique casez (instr_i)
         // WU
-        ILA: begin
-          wu_cs = '1;
-          wu_write_AB = '1;
-          wu_new_A = 8'(instr[3:0]);
-          wu_mask = 8'h0F;
+        Ila: begin
+          wu_cs_o = '1;
+          wu_write_ab_o = '1;
+          wu_new_a_o = 8'(instr_i[3:0]);
+          wu_mask_a_o = 8'h0F;
         end
-        ILB: begin
-          wu_cs = '1;
-          wu_write_AB = '1;
-          wu_new_B = 8'(instr[3:0]);
-          wu_mask_2 = 8'h0F;
+        Ilb: begin
+          wu_cs_o = '1;
+          wu_write_ab_o = '1;
+          wu_new_b_o = 8'(instr_i[3:0]);
+          wu_mask_b_o = 8'h0F;
         end
-        IHA: begin
-          wu_cs = '1;
-          wu_write_AB = '1;
-          wu_new_A = { instr[3:0], 4'b0 };
-          wu_mask = 8'hF0;
+        Iha: begin
+          wu_cs_o = '1;
+          wu_write_ab_o = '1;
+          wu_new_a_o = { instr_i[3:0], 4'b0 };
+          wu_mask_a_o = 8'hF0;
         end
-        IHB: begin
-          wu_cs = '1;
-          wu_write_AB = '1;
-          wu_new_B = { instr[3:0], 4'b0 };
-          wu_mask_2 = 8'hF0;
+        Ihb: begin
+          wu_cs_o = '1;
+          wu_write_ab_o = '1;
+          wu_new_b_o = { instr_i[3:0], 4'b0 };
+          wu_mask_b_o = 8'hF0;
         end
-        ALO: begin
-          wu_cs = '1;
-          wu_write_AR = '1;
-          wu_new_AR = 8'(instr[3:0]);
-          wu_mask = 8'h0F;
+        Alo: begin
+          wu_cs_o = '1;
+          wu_write_ar_o = '1;
+          wu_new_ar_o = 8'(instr_i[3:0]);
+          wu_mask_a_o = 8'h0F;
         end
-        AHI: begin
-          wu_cs = '1;
-          wu_write_AR = '1;
-          wu_new_AR = { instr[3:0], 4'b0 };
-          wu_mask = 8'hF0;
-        end
-
-        SLDA: begin
-          wu_cs = '1;
-          wu_simple_load = '1;
-          wu_use_A = '1;
-          wu_simple_addr = instr[3:0];
-        end
-        SLDB: begin
-          wu_cs = '1;
-          wu_simple_load = '1;
-          wu_use_A = '0;
-          wu_simple_addr = instr[3:0];
-        end
-        SSTA: begin
-          wu_cs = '1;
-          wu_simple_store = '1;
-          wu_use_A = '1;
-          wu_simple_addr = instr[3:0];
-        end
-        SSTB: begin
-          wu_cs = '1;
-          wu_simple_store = '1;
-          wu_use_A = '0;
-          wu_simple_addr = instr[3:0];
+        Ahi: begin
+          wu_cs_o = '1;
+          wu_write_ar_o = '1;
+          wu_new_ar_o = { instr_i[3:0], 4'b0 };
+          wu_mask_a_o = 8'hF0;
         end
 
+        Slda: begin
+          wu_cs_o = '1;
+          wu_simple_load_o = '1;
+          wu_use_a_o = '1;
+          wu_simple_addr_o = instr_i[3:0];
+        end
+        Sldb: begin
+          wu_cs_o = '1;
+          wu_simple_load_o = '1;
+          wu_use_a_o = '0;
+          wu_simple_addr_o = instr_i[3:0];
+        end
+        Ssta: begin
+          wu_cs_o = '1;
+          wu_simple_store_o = '1;
+          wu_use_a_o = '1;
+          wu_simple_addr_o = instr_i[3:0];
+        end
+        Sstb: begin
+          wu_cs_o = '1;
+          wu_simple_store_o = '1;
+          wu_use_a_o = '0;
+          wu_simple_addr_o = instr_i[3:0];
+        end
 
-        LDA: begin
-          wu_cs = '1;
-          wu_load = '1;
-          wu_use_A = '1;
+        Lda: begin
+          wu_cs_o = '1;
+          wu_load_o = '1;
+          wu_use_a_o = '1;
         end
-        LDB: begin
-          wu_cs = '1;
-          wu_load = '1;
-          wu_use_A = '0;
+        Ldb: begin
+          wu_cs_o = '1;
+          wu_load_o = '1;
+          wu_use_a_o = '0;
         end
-        STA: begin
-          wu_cs = '1;
-          wu_store = '1;
-          wu_use_A = '1;
+        Sta: begin
+          wu_cs_o = '1;
+          wu_store_o = '1;
+          wu_use_a_o = '1;
         end
-        STB: begin
-          wu_cs = '1;
-          wu_store = '1;
-          wu_use_A = '0;
+        Stb: begin
+          wu_cs_o = '1;
+          wu_store_o = '1;
+          wu_use_a_o = '0;
         end
 
-        TAR: begin
-          wu_cs = '1;
-          wu_do_TAR = '1;
+        Tar: begin
+          wu_cs_o = '1;
+          wu_do_tar_o = '1;
         end
 
         // RU
-        JMP: begin
-          ru_cs = '1;
-          ru_jmp = '1;
+        Jmp: begin
+          ru_cs_o = '1;
+          ru_jmp_o = '1;
         end
-        JF: begin
-          ru_cs = '1;
-          ru_jmp = '1;
-          ru_jmp_cond = '1;
+        Jf: begin
+          ru_cs_o = '1;
+          ru_jmp_o = '1;
+          ru_jmp_cond_o = '1;
         end
-        CALL: begin
-          ru_cs = '1;
-          ru_call = '1;
+        Call: begin
+          ru_cs_o = '1;
+          ru_call_o = '1;
         end
-        RET: begin
-          ru_cs = '1;
-          ru_ret = '1;
-        end
-        
-        // ALU
-        INVA, INVB, ADD, SUB, MUL, DIV, SWAP, INC, AND, NAND, OR, NOR, XOR, XNOR, SHL, SHR, EQ, NEQ, LT, GTE, GT, LTE, CLF, STF: begin
-          alu_cs = '1;
-          alu_opcode = instr;
+        Ret: begin
+          ru_cs_o = '1;
+          ru_ret_o = '1;
         end
 
-        // Other
-        default: ;
+        // ALU
+        Inva, Invb, Add, Sub, Mul, Div, Swap, Inc,
+        And, Nand, Or, Nor, Xor, Xnor, Shl, Shr,
+        Eq, Neq, Lt, Gte, Gt, Lte, Clf, Stf: begin
+          alu_cs_o = '1;
+          alu_op_o = instr_i;
+        end
+
+        default: ;                // Undefined instruction: no unit selected
       endcase
-    end else begin
-      { ru_cs, ru_jmp, ru_jmp_cond, ru_call, ru_ret } = 'x;
-      { alu_cs, alu_opcode } = 'x;
-      { wu_cs, wu_new_A, wu_new_B, wu_write_AB, wu_new_AR, wu_write_AR, wu_do_TAR, wu_use_A, wu_mask, wu_mask_2, wu_load, wu_store, wu_simple_addr, wu_simple_load, wu_simple_store } = 'x;
     end
   end
 

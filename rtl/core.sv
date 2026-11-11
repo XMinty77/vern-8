@@ -1,158 +1,157 @@
-/* ================ Core Implementation ================
- * The top level module of the CPU
- * =====================================================
+/* ================ Core ================
+ * Top level: instantiates the units and routes signals between them
+ * ======================================
  */
 
 module core (
-  input logic clk,
-  input logic rst
+  input logic clk_i,
+  input logic rst_i
 );
 
-  // Import opcodes package
-  import opcodes::*;
+  // ---------------- Units ----------------
 
-  // Instances
-  
-  logic [7:0] wu_in_A, wu_in_B, wu_in_AR, wu_in_mem, wu_mask, wu_mask_2;
-  logic       wu_write_AB, wu_use_A, wu_write_AR, wu_do_TAR, wu_load, wu_store, wu_simple_load, wu_simple_store;
+  logic [7:0] wu_new_a, wu_new_b, wu_new_ar, wu_mem_rdata, wu_mask_a, wu_mask_b;
+  logic       wu_write_ab, wu_use_a, wu_write_ar, wu_do_tar;
+  logic       wu_load, wu_store, wu_simple_load, wu_simple_store;
   logic [3:0] wu_simple_addr;
-  logic [7:0] wu_out_A, wu_out_B, wu_out_AR, wu_out_mem, wu_mem_addr;
+  logic [7:0] wu_a, wu_b, wu_ar, wu_mem_wdata, wu_mem_addr;
   logic       wu_mem_write;
-   wu wu (
-    .new_A        (wu_in_A),
-    .new_B        (wu_in_B),
-    .write_AB     (wu_write_AB),
-    .use_A        (wu_use_A),
-    .mask         (wu_mask),
-    .mask_2       (wu_mask_2),
-    .new_AR       (wu_in_AR),
-    .write_AR     (wu_write_AR),
-    .do_TAR       (wu_do_TAR),
-    .load         (wu_load),
-    .store        (wu_store),
-    .simple_addr  (wu_simple_addr),
-    .simple_load  (wu_simple_load),
-    .simple_store (wu_simple_store),
-    .mem_val_in   (wu_in_mem),
-    .A            (wu_out_A),
-    .B            (wu_out_B),
-    .AR           (wu_out_AR),
-    .mem_addr     (wu_mem_addr),
-    .mem_val_out  (wu_out_mem),
-    .mem_write    (wu_mem_write),
-    .clk          (clk),
-    .rst          (rst)
-  );
-  
-  logic       ru_jmp, ru_jmp_cond, ru_call, ru_ret, ru_write_F;
-  logic       ru_in_F, ru_out_F;
-  logic [7:0] ru_in_AR, ru_out_PC;
-  ru ru (
-    .jmp      (ru_jmp),
-    .jmp_cond (ru_jmp_cond),
-    .call     (ru_call),
-    .ret      (ru_ret),
-    .new_F    (ru_in_F),
-    .write_F  (ru_write_F),
-    .AR       (ru_in_AR),
-    .PC       (ru_out_PC),
-    .F        (ru_out_F),
-    .clk      (clk),
-    .rst      (rst)
+  wu u_wu (
+    .clk_i          (clk_i),
+    .rst_i          (rst_i),
+    .new_a_i        (wu_new_a),
+    .new_b_i        (wu_new_b),
+    .write_ab_i     (wu_write_ab),
+    .use_a_i        (wu_use_a),
+    .mask_a_i       (wu_mask_a),
+    .mask_b_i       (wu_mask_b),
+    .new_ar_i       (wu_new_ar),
+    .write_ar_i     (wu_write_ar),
+    .do_tar_i       (wu_do_tar),
+    .load_i         (wu_load),
+    .store_i        (wu_store),
+    .simple_addr_i  (wu_simple_addr),
+    .simple_load_i  (wu_simple_load),
+    .simple_store_i (wu_simple_store),
+    .mem_rdata_i    (wu_mem_rdata),
+    .a_o            (wu_a),
+    .b_o            (wu_b),
+    .ar_o           (wu_ar),
+    .mem_addr_o     (wu_mem_addr),
+    .mem_wdata_o    (wu_mem_wdata),
+    .mem_write_o    (wu_mem_write)
   );
 
-  logic [7:0] alu_in_A, alu_in_B, alu_out_A, alu_out_B;
-  logic       alu_in_F, alu_out_F;
-  logic [7:0] alu_opcode;
-  alu alu (
-    .cur_A  (alu_in_A),
-    .cur_B  (alu_in_B),
-    .cur_F  (alu_in_F),
-    .new_A  (alu_out_A),
-    .new_B  (alu_out_B),
-    .new_F  (alu_out_F),
-    .opcode (alu_opcode)
+  logic       ru_jmp, ru_jmp_cond, ru_call, ru_ret, ru_write_f;
+  logic       ru_new_f, ru_f;
+  logic [7:0] ru_ar, ru_pc;
+  ru u_ru (
+    .clk_i      (clk_i),
+    .rst_i      (rst_i),
+    .jmp_i      (ru_jmp),
+    .jmp_cond_i (ru_jmp_cond),
+    .call_i     (ru_call),
+    .ret_i      (ru_ret),
+    .new_f_i    (ru_new_f),
+    .write_f_i  (ru_write_f),
+    .ar_i       (ru_ar),
+    .pc_o       (ru_pc),
+    .f_o        (ru_f)
   );
 
-  logic [7:0] M_addr, M_in, PM_addr, PM_in;
-  logic       M_write, PM_write;
-  logic [7:0] M_out, PM_out;
-  memory M (
-    .addr  (M_addr),
-    .in    (M_in),
-    .write (M_write),
-    .out   (M_out),
-    .clk   (clk)
+  logic [7:0] alu_a, alu_b, alu_new_a, alu_new_b;
+  logic       alu_f, alu_new_f;
+  logic [7:0] alu_op;
+  alu u_alu (
+    .a_i     (alu_a),
+    .b_i     (alu_b),
+    .f_i     (alu_f),
+    .new_a_o (alu_new_a),
+    .new_b_o (alu_new_b),
+    .new_f_o (alu_new_f),
+    .op_i    (alu_op)
+  );
+
+  logic [7:0] m_addr, m_wdata, pm_addr, pm_wdata;
+  logic       m_write, pm_write;
+  logic [7:0] m_rdata, pm_rdata;
+  memory u_m (
+    .clk_i   (clk_i),
+    .addr_i  (m_addr),
+    .wdata_i (m_wdata),
+    .write_i (m_write),
+    .rdata_o (m_rdata)
   );
   memory #(
-    // Program goes here v
-    .HEX_FILE("")
-  ) PM (
-    .addr  (PM_addr),
-    .in    (PM_in),
-    .write (PM_write),
-    .out   (PM_out),
-    .clk   (clk)
+    .HexFile ("")               // Empty: the program is loaded by the bench
+  ) u_pm (
+    .clk_i   (clk_i),
+    .addr_i  (pm_addr),
+    .wdata_i (pm_wdata),
+    .write_i (pm_write),
+    .rdata_o (pm_rdata)
   );
 
-  logic [7:0] cu_in_instr;
+  logic [7:0] cu_instr;
   logic       ru_cs, alu_cs, wu_cs;
   logic       cu_ru_jmp, cu_ru_jmp_cond, cu_ru_call, cu_ru_ret;
-  logic [7:0] cu_alu_opcode;
-  logic [7:0] cu_wu_new_A, cu_wu_new_B, cu_wu_new_AR, cu_wu_mask, cu_wu_mask_2;
-  logic       cu_wu_write_AB, cu_wu_write_AR, cu_wu_do_TAR, cu_wu_use_A;
+  logic [7:0] cu_alu_op;
+  logic [7:0] cu_wu_new_a, cu_wu_new_b, cu_wu_new_ar, cu_wu_mask_a, cu_wu_mask_b;
+  logic       cu_wu_write_ab, cu_wu_write_ar, cu_wu_do_tar, cu_wu_use_a;
   logic       cu_wu_load, cu_wu_store, cu_wu_simple_load, cu_wu_simple_store;
   logic [3:0] cu_wu_simple_addr;
-  cu cu (
-    .instr           (cu_in_instr),
+  cu u_cu (
+    .instr_i           (cu_instr),
 
-    .ru_cs           (ru_cs),
-    .ru_jmp          (cu_ru_jmp),
-    .ru_jmp_cond     (cu_ru_jmp_cond),
-    .ru_call         (cu_ru_call),
-    .ru_ret          (cu_ru_ret),
+    .ru_cs_o           (ru_cs),
+    .ru_jmp_o          (cu_ru_jmp),
+    .ru_jmp_cond_o     (cu_ru_jmp_cond),
+    .ru_call_o         (cu_ru_call),
+    .ru_ret_o          (cu_ru_ret),
 
-    .alu_cs          (alu_cs),
-    .alu_opcode      (cu_alu_opcode),
+    .alu_cs_o          (alu_cs),
+    .alu_op_o          (cu_alu_op),
 
-    .wu_cs           (wu_cs),
-    .wu_new_A        (cu_wu_new_A),
-    .wu_new_B        (cu_wu_new_B),
-    .wu_write_AB     (cu_wu_write_AB),
-    .wu_new_AR       (cu_wu_new_AR),
-    .wu_write_AR     (cu_wu_write_AR),
-    .wu_do_TAR       (cu_wu_do_TAR),
-    .wu_use_A        (cu_wu_use_A),
-    .wu_mask         (cu_wu_mask),
-    .wu_mask_2       (cu_wu_mask_2),
-    .wu_load         (cu_wu_load),
-    .wu_store        (cu_wu_store),
-    .wu_simple_addr  (cu_wu_simple_addr),
-    .wu_simple_load  (cu_wu_simple_load),
-    .wu_simple_store (cu_wu_simple_store)
+    .wu_cs_o           (wu_cs),
+    .wu_new_a_o        (cu_wu_new_a),
+    .wu_new_b_o        (cu_wu_new_b),
+    .wu_write_ab_o     (cu_wu_write_ab),
+    .wu_new_ar_o       (cu_wu_new_ar),
+    .wu_write_ar_o     (cu_wu_write_ar),
+    .wu_do_tar_o       (cu_wu_do_tar),
+    .wu_use_a_o        (cu_wu_use_a),
+    .wu_mask_a_o       (cu_wu_mask_a),
+    .wu_mask_b_o       (cu_wu_mask_b),
+    .wu_load_o         (cu_wu_load),
+    .wu_store_o        (cu_wu_store),
+    .wu_simple_addr_o  (cu_wu_simple_addr),
+    .wu_simple_load_o  (cu_wu_simple_load),
+    .wu_simple_store_o (cu_wu_simple_store)
   );
 
-  // Core logic
+  // ---------------- Routing ----------------
 
-  // Always connected
-  assign ru_in_AR = wu_out_AR;
-  assign PM_addr = ru_out_PC;
-  assign cu_in_instr = PM_out;
-  assign { PM_write, PM_in } = '0;
+  // Fixed connections
+  assign ru_ar                  = wu_ar;
+  assign pm_addr                = ru_pc;
+  assign cu_instr               = pm_rdata;
+  assign { pm_write, pm_wdata } = '0;
 
-  // It's muxing time!
+  // An x or z on any unit select makes every routed input x
+  logic cs_known;
+  assign cs_known = !$isunknown(ru_cs) && !$isunknown(wu_cs) && !$isunknown(alu_cs);
 
-  // Blocks are split based on independent destinations
-  // Merging the blocks would result in indefinite simulation hangs
+  // One block per destination unit. A single block would read signals that
+  // depend on its own outputs (through the units), so it would keep
+  // re-triggering itself and the simulation would hang.
 
   // RU inputs
   always_comb begin
-    if (!$isunknown(ru_cs) && !$isunknown(wu_cs) && !$isunknown(alu_cs)) begin
-      { ru_jmp, ru_jmp_cond, ru_call, ru_ret }              = '0;
-      { ru_in_F, ru_write_F }                               = '0;
+    if (cs_known) begin
+      { ru_jmp, ru_jmp_cond, ru_call, ru_ret } = '0;
+      { ru_new_f, ru_write_f } = '0;
 
       if (ru_cs) begin
-        // Connections
         ru_jmp      = cu_ru_jmp;
         ru_jmp_cond = cu_ru_jmp_cond;
         ru_call     = cu_ru_call;
@@ -160,36 +159,34 @@ module core (
       end
 
       if (alu_cs) begin
-        // Spec logic
-        ru_write_F = '1;
-        ru_in_F = alu_out_F;
+        ru_write_f = '1;
+        ru_new_f   = alu_new_f;
       end
     end else begin
-      { ru_jmp, ru_jmp_cond, ru_call, ru_ret }              = 'x;
-      { ru_in_F, ru_write_F }                               = 'x;
+      { ru_jmp, ru_jmp_cond, ru_call, ru_ret } = 'x;
+      { ru_new_f, ru_write_f } = 'x;
     end
   end
 
   // WU inputs, except the memory value
   always_comb begin
-    if (!$isunknown(ru_cs) && !$isunknown(wu_cs) && !$isunknown(alu_cs)) begin
-      { wu_in_A, wu_in_B, wu_write_AB, wu_use_A }           = '0;
-      { wu_mask, wu_mask_2 }                                = '0;
-      { wu_in_AR, wu_write_AR, wu_do_TAR }                  = '0;
-      { wu_load, wu_store }                                 = '0;
-      { wu_simple_addr, wu_simple_load, wu_simple_store }   = '0;
+    if (cs_known) begin
+      { wu_new_a, wu_new_b, wu_write_ab, wu_use_a } = '0;
+      { wu_mask_a, wu_mask_b } = '0;
+      { wu_new_ar, wu_write_ar, wu_do_tar } = '0;
+      { wu_load, wu_store } = '0;
+      { wu_simple_addr, wu_simple_load, wu_simple_store } = '0;
 
       if (wu_cs) begin
-        // Connections
-        wu_in_A         = cu_wu_new_A;
-        wu_in_B         = cu_wu_new_B;
-        wu_write_AB     = cu_wu_write_AB;
-        wu_use_A        = cu_wu_use_A;
-        wu_mask         = cu_wu_mask;
-        wu_mask_2       = cu_wu_mask_2;
-        wu_in_AR        = cu_wu_new_AR;
-        wu_write_AR     = cu_wu_write_AR;
-        wu_do_TAR       = cu_wu_do_TAR;
+        wu_new_a        = cu_wu_new_a;
+        wu_new_b        = cu_wu_new_b;
+        wu_write_ab     = cu_wu_write_ab;
+        wu_use_a        = cu_wu_use_a;
+        wu_mask_a       = cu_wu_mask_a;
+        wu_mask_b       = cu_wu_mask_b;
+        wu_new_ar       = cu_wu_new_ar;
+        wu_write_ar     = cu_wu_write_ar;
+        wu_do_tar       = cu_wu_do_tar;
         wu_load         = cu_wu_load;
         wu_store        = cu_wu_store;
         wu_simple_addr  = cu_wu_simple_addr;
@@ -198,64 +195,56 @@ module core (
       end
 
       if (alu_cs) begin
-        // Spec logic
-        wu_write_AB = '1;
-        { wu_mask, wu_mask_2 } = '1;
-        { wu_in_A, wu_in_B } = { alu_out_A, alu_out_B };
+        wu_write_ab = '1;
+        { wu_mask_a, wu_mask_b } = '1;
+        { wu_new_a, wu_new_b } = { alu_new_a, alu_new_b };
       end
     end else begin
-      { wu_in_A, wu_in_B, wu_write_AB, wu_use_A }           = 'x;
-      { wu_mask, wu_mask_2 }                                = 'x;
-      { wu_in_AR, wu_write_AR, wu_do_TAR }                  = 'x;
-      { wu_load, wu_store }                                 = 'x;
-      { wu_simple_addr, wu_simple_load, wu_simple_store }   = 'x;
+      { wu_new_a, wu_new_b, wu_write_ab, wu_use_a } = 'x;
+      { wu_mask_a, wu_mask_b } = 'x;
+      { wu_new_ar, wu_write_ar, wu_do_tar } = 'x;
+      { wu_load, wu_store } = 'x;
+      { wu_simple_addr, wu_simple_load, wu_simple_store } = 'x;
     end
   end
 
   // WU memory value
   always_comb begin
-    if (!$isunknown(ru_cs) && !$isunknown(wu_cs) && !$isunknown(alu_cs)) begin
-      wu_in_mem = '0;
+    if (cs_known) begin
+      wu_mem_rdata = '0;
 
-      if (wu_cs) begin
-        // Spec logic
-        wu_in_mem = M_out;
-      end
+      if (wu_cs) wu_mem_rdata = m_rdata;
     end else begin
-      wu_in_mem = 'x;
+      wu_mem_rdata = 'x;
     end
   end
 
   // M inputs
   always_comb begin
-    if (!$isunknown(ru_cs) && !$isunknown(wu_cs) && !$isunknown(alu_cs)) begin
-      { M_addr, M_in, M_write }                             = '0;
+    if (cs_known) begin
+      { m_addr, m_wdata, m_write } = '0;
 
       if (wu_cs) begin
-        // Spec logic
-        M_in = wu_out_mem;
-        M_addr = wu_mem_addr;
-        M_write = wu_mem_write;
+        m_wdata = wu_mem_wdata;
+        m_addr  = wu_mem_addr;
+        m_write = wu_mem_write;
       end
     end else begin
-      { M_addr, M_in, M_write }                             = 'x;
+      { m_addr, m_wdata, m_write } = 'x;
     end
   end
 
   // ALU inputs
   always_comb begin
-    if (!$isunknown(ru_cs) && !$isunknown(wu_cs) && !$isunknown(alu_cs)) begin
-      { alu_in_A, alu_in_B, alu_in_F, alu_opcode }          = '0;
+    if (cs_known) begin
+      { alu_a, alu_b, alu_f, alu_op } = '0;
 
       if (alu_cs) begin
-        // Spec logic
-        { alu_in_A, alu_in_B, alu_in_F } = { wu_out_A, wu_out_B, ru_out_F };
-
-        // Connection...!
-        alu_opcode = cu_alu_opcode;
+        { alu_a, alu_b, alu_f } = { wu_a, wu_b, ru_f };
+        alu_op = cu_alu_op;
       end
     end else begin
-      { alu_in_A, alu_in_B, alu_in_F, alu_opcode }          = 'x;
+      { alu_a, alu_b, alu_f, alu_op } = 'x;
     end
   end
 

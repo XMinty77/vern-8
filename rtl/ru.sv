@@ -1,101 +1,62 @@
-/* ================ RU Implementation ================
- * RU implementation as per spec
- * Holds PC, F, call stack S, call depth D
- * Reset pulls all internal states to zero
- * ===================================================
+/* ================ RU ================
+ * Running unit: holds PC, F, the call stack S and the call depth D
+ * ====================================
  */
 
 module ru (
-  input  logic       jmp,
-  input  logic       jmp_cond,
-  input  logic       call,
-  input  logic       ret,
-  input  logic       new_F,
-  input  logic       write_F,
-  input  logic [7:0] AR,
-  input  logic       clk,
-  input  logic       rst,
-  output logic [7:0] PC,
-  output logic       F
+  input  logic       clk_i,
+  input  logic       rst_i,
+  input  logic       jmp_i,
+  input  logic       jmp_cond_i,
+  input  logic       call_i,
+  input  logic       ret_i,
+  input  logic       new_f_i,
+  input  logic       write_f_i,
+  input  logic [7:0] ar_i,
+  output logic [7:0] pc_o,
+  output logic       f_o
 );
 
-  // Internal state
-  logic [7:0] _PC;
-  logic _F;
-  logic [3:0][7:0] S;
-  logic [2:0] D;
+  localparam int                         StackDepth      = 4;
+  localparam int                         StackDepthWidth = $clog2(StackDepth + 1);  // +1 for d_q = 0
+  localparam logic [StackDepthWidth-1:0] StackMax        = StackDepthWidth'(StackDepth);
 
-  // Expose always
-  assign PC = _PC;
-  assign F = _F;
+  logic [7:0]                 pc_q;
+  logic                       f_q;
+  logic [StackDepth-1:0][7:0] s_q;
+  logic [StackDepthWidth-1:0] d_q;
 
-  // Pos edge sequential logic
-  always_ff @(posedge clk) begin
-    if ($isunknown(rst))
-      { _PC, _F, S, D } <= 'x;
-    else begin
-      if (rst) begin
-        // Reset overrides everything
-        _F <= '0;
-        _PC <= '0;
-        S[0] <= '0;
-        S[1] <= '0;
-        S[2] <= '0;
-        S[3] <= '0;
-        D <= '0;
+  assign pc_o = pc_q;
+  assign f_o  = f_q;
+
+  always_ff @(posedge clk_i) begin
+    if ($isunknown(rst_i))  { pc_q, f_q, s_q, d_q } <= 'x;
+    else if (rst_i)         { pc_q, f_q, s_q, d_q } <= '0;
+    else if (jmp_i && !call_i && !ret_i && !write_f_i) begin
+      if ($isunknown(jmp_cond_i) || (jmp_cond_i && $isunknown(f_q)))  pc_q <= 'x;
+      else if (!jmp_cond_i || f_q)                                    pc_q <= ar_i;
+      else                                                            pc_q <= pc_q + 8'd1;
+    end else if (!jmp_i && !jmp_cond_i && call_i && !ret_i && !write_f_i) begin
+      s_q  <= { s_q[StackDepth-2:0], pc_q + 8'd1 };
+      pc_q <= ar_i;
+      if ($isunknown(d_q))        d_q <= 'x;
+      else if (d_q != StackMax)   d_q <= d_q + 1'b1;
+    end else if (!jmp_i && !jmp_cond_i && !call_i && ret_i && !write_f_i) begin
+      if ($isunknown(d_q)) begin
+        { pc_q, s_q, d_q } <= 'x;
+      end else if (d_q != '0) begin
+        { s_q, pc_q } <= { 8'h00, s_q };
+        d_q           <= d_q - 1'b1;
       end else begin
-        // No reset signal
-        if (jmp && !call && !ret && !write_F) begin
-          if ($isunknown(jmp_cond) || jmp_cond && $isunknown(_F)) _PC <= 'x;
-          else begin
-            if (!jmp_cond || jmp_cond && F) _PC <= AR;  // Non-conditional or conditional with true condition
-            else _PC <= _PC + 1;                        // Failed condition
-          end
-        end else if (!jmp && !jmp_cond && call && !ret && !write_F) begin
-          // Push down the stack
-          S[3] <= S[2];
-          S[2] <= S[1];
-          S[1] <= S[0];
-          S[0] <= _PC + 1;
-          _PC <= AR;
-
-          // Increase depth if applicable
-          if ($isunknown(D)) { D } <= 'x;
-          else if (D != 3'd4) D <= D + 1;
-        end else if (!jmp && !jmp_cond && !call && ret && !write_F) begin
-          if ($isunknown(D)) { _PC, S, D } <= 'x;
-          else begin
-            // Return only if applicable
-            if (D != 3'd0) begin
-              // Pop from the stack
-              _PC <= S[0];
-              S[0] <= S[1];
-              S[1] <= S[2];
-              S[2] <= S[3];
-              S[3] <= 0;
-
-              // Decrease depth
-              D <= D - 1;
-            end else _PC <= _PC + 1;
-          end
-        end else if (!jmp && !jmp_cond && !call && !ret && write_F) begin
-          // Write new F and step PC
-          _F <= new_F;
-          _PC <= _PC + 1;
-        end else if (!jmp && !jmp_cond && !call && !ret && !write_F) begin
-          // Nothing to do, just step PC
-          _PC <= _PC + 1;
-        end else begin
-          // Unsupported combination of signals
-          _PC <= 'x;
-          _F <= 'x;
-          D <= 'x;
-          S[0] <= 'x;
-          S[1] <= 'x;
-          S[2] <= 'x;
-          S[3] <= 'x;
-        end
+        pc_q <= pc_q + 8'd1;      // RET at depth 0: no-op
       end
+    end else if (!jmp_i && !jmp_cond_i && !call_i && !ret_i && write_f_i) begin
+      f_q  <= new_f_i;
+      pc_q <= pc_q + 8'd1;
+    end else if (!jmp_i && !jmp_cond_i && !call_i && !ret_i && !write_f_i) begin
+      pc_q <= pc_q + 8'd1;        // Nothing selected: step once
+    end else begin
+      { pc_q, f_q, s_q, d_q } <= 'x;
     end
   end
 

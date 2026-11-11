@@ -1,130 +1,126 @@
-/* ================ WU Implementation ================
- * WU implementation as per spec
- * Holds A, B, AR and handles memory L/S.
- * ===================================================
+/* ================ WU ================
+ * Working unit: holds A, B and AR, and drives the memory interface
+ * ====================================
  */
 
 module wu (
-  input  logic [7:0] new_A,
-  input  logic [7:0] new_B,
-  input  logic       write_AB,
-  input  logic       use_A,
-  input  logic [7:0] mask,
-  input  logic [7:0] mask_2,
-  input  logic [7:0] new_AR,
-  input  logic       write_AR,
-  input  logic       do_TAR,
-  input  logic       load,
-  input  logic       store,
-  input  logic [3:0] simple_addr,
-  input  logic       simple_load,
-  input  logic       simple_store,
-  input  logic [7:0] mem_val_in,
-  input  logic       clk,
-  input  logic       rst,
-  output logic [7:0] A,
-  output logic [7:0] B,
-  output logic [7:0] AR,
-  output logic [7:0] mem_addr,
-  output logic [7:0] mem_val_out,
-  output logic       mem_write
+  input  logic       clk_i,
+  input  logic       rst_i,
+  input  logic [7:0] new_a_i,
+  input  logic [7:0] new_b_i,
+  input  logic       write_ab_i,
+  input  logic       use_a_i,
+  input  logic [7:0] mask_a_i,
+  input  logic [7:0] mask_b_i,
+  input  logic [7:0] new_ar_i,
+  input  logic       write_ar_i,
+  input  logic       do_tar_i,
+  input  logic       load_i,
+  input  logic       store_i,
+  input  logic [3:0] simple_addr_i,
+  input  logic       simple_load_i,
+  input  logic       simple_store_i,
+  input  logic [7:0] mem_rdata_i,
+  output logic [7:0] a_o,
+  output logic [7:0] b_o,
+  output logic [7:0] ar_o,
+  output logic [7:0] mem_addr_o,
+  output logic [7:0] mem_wdata_o,
+  output logic       mem_write_o
 );
 
-  // TODO: Refactor into a nicer shape
-  logic only_write_AB;
-  logic only_write_AR;
-  logic only_do_TAR;
-  logic only_load;
-  logic only_store;
-  logic only_simple_load;
-  logic only_simple_store;
+  localparam logic [6:0] CmdNothing     = 7'b000_0000;
+  localparam logic [6:0] CmdWriteAb     = 7'b100_0000;
+  localparam logic [6:0] CmdWriteAr     = 7'b010_0000;
+  localparam logic [6:0] CmdDoTar       = 7'b001_0000;
+  localparam logic [6:0] CmdLoad        = 7'b000_1000;
+  localparam logic [6:0] CmdStore       = 7'b000_0100;
+  localparam logic [6:0] CmdSimpleLoad  = 7'b000_0010;
+  localparam logic [6:0] CmdSimpleStore = 7'b000_0001;
 
-  assign only_write_AB     = write_AB & !write_AR & !do_TAR & !load & !store & !simple_load & !simple_store;
-  assign only_write_AR     = !write_AB & write_AR & !do_TAR & !load & !store & !simple_load & !simple_store;
-  assign only_do_TAR       = !write_AB & !write_AR & do_TAR & !load & !store & !simple_load & !simple_store;
-  assign only_load         = !write_AB & !write_AR & !do_TAR & load & !store & !simple_load & !simple_store;
-  assign only_store        = !write_AB & !write_AR & !do_TAR & !load & store & !simple_load & !simple_store;
-  assign only_simple_load  = !write_AB & !write_AR & !do_TAR & !load & !store & simple_load & !simple_store;
-  assign only_simple_store = !write_AB & !write_AR & !do_TAR & !load & !store & !simple_load & simple_store;
+  logic [7:0] a_q, b_q, ar_q;
 
-  // Internal state
-  logic [7:0] _A;
-  logic [7:0] _B;
-  logic [7:0] _AR;
+  assign a_o  = a_q;
+  assign b_o  = b_q;
+  assign ar_o = ar_q;
 
-  // Expose always
-  assign A = _A;
-  assign B = _B;
-  assign AR = _AR;
+  logic [6:0] cmd;
+  assign cmd = { write_ab_i, write_ar_i, do_tar_i, load_i, store_i, simple_load_i, simple_store_i };
 
-  // Combinational outputs
+  function automatic logic [7:0] masked_merge (
+    logic [7:0] new_value,
+    logic [7:0] old_value,
+    logic [7:0] merge_mask
+  );
+    return (new_value & merge_mask) | (old_value & ~merge_mask);
+  endfunction
+
+  // Register a store writes to memory
+  logic [7:0] store_val;
   always_comb begin
-    if ($isunknown(rst)) { mem_val_out, mem_addr, mem_write } = 'x;
-    else begin
-      { mem_val_out, mem_addr, mem_write } = '0;
+    if ($isunknown(use_a_i))  store_val = 'x;
+    else if (use_a_i)         store_val = a_q;
+    else                      store_val = b_q;
+  end
 
-      if (~rst) begin
-        if ($isunknown(write_AB) || $isunknown(write_AR) || $isunknown(do_TAR) || $isunknown(load) ||
-            $isunknown(store) || $isunknown(simple_load) || $isunknown(simple_store))
-          { mem_val_out, mem_addr, mem_write } = 'x;
-        else if (only_load) begin
-          mem_addr = _AR;
-          mem_write = '0;
-        end else if (only_simple_load) begin
-          mem_addr = 8'(simple_addr);
-          mem_write = '0;
-        end else if (only_store) begin
-          mem_addr = _AR;
-          mem_write = '1;
-        end else if (only_simple_store) begin
-          mem_addr = 8'(simple_addr);
-          mem_write = '1;
+  // Memory interface
+  always_comb begin
+    { mem_wdata_o, mem_addr_o, mem_write_o } = '0;
+
+    if ($isunknown(rst_i) || $isunknown(cmd))  { mem_wdata_o, mem_addr_o, mem_write_o } = 'x;
+    else if (rst_i)                            { mem_wdata_o, mem_addr_o, mem_write_o } = '0;
+    else begin
+      case (cmd)
+        CmdLoad: begin
+          mem_addr_o  = ar_q;
+          mem_write_o = '0;
         end
-        
-        if (only_store || only_simple_store) begin
-          if ($isunknown(use_A)) mem_val_out = 'x;
-          else begin
-            if (use_A) mem_val_out = _A;
-            else       mem_val_out = _B;
-          end
+        CmdSimpleLoad: begin
+          mem_addr_o  = 8'(simple_addr_i);
+          mem_write_o = '0;
         end
-      end
+        CmdStore: begin
+          mem_addr_o  = ar_q;
+          mem_wdata_o = store_val;
+          mem_write_o = '1;
+        end
+        CmdSimpleStore: begin
+          mem_addr_o  = 8'(simple_addr_i);
+          mem_wdata_o = store_val;
+          mem_write_o = '1;
+        end
+        CmdNothing,
+        CmdWriteAb,
+        CmdWriteAr,
+        CmdDoTar: ;                         // No memory access
+        default: { mem_wdata_o, mem_addr_o, mem_write_o } = '0;  // Disallowed: write must never be x
+      endcase
     end
   end
 
-  // Pos edge sequential logic
-  always_ff @(posedge clk) begin
-    if ($isunknown(rst)) { _A, _B , _AR } <= 'x;
+  // Registers
+  always_ff @(posedge clk_i) begin
+    if ($isunknown(rst_i))  { a_q, b_q, ar_q } <= 'x;
+    else if (rst_i)         { a_q, b_q, ar_q } <= '0;
     else begin
-      if (rst) begin
-        // Reset overrides everything
-        _A <= '0;
-        _B <= '0;
-        _AR <= '0;
-      end else begin
-        if (only_write_AB) begin
-          _A <=  (new_A & mask) | (_A & ~mask);
-          _B <=  (new_B & mask_2) | (_B & ~mask_2);
-        end else if (only_write_AR) begin
-          _AR <= (new_AR & mask) | (_AR & ~mask);
-        end else if (only_do_TAR) begin
-          _AR <= _A;
-        end else if (only_load | only_simple_load) begin
-          if ($isunknown(use_A)) { _A, _B } <= 'x;
-          else begin
-            if (use_A) _A <= mem_val_in;
-            else       _B <= mem_val_in;
-          end
-        end else if (only_store | only_simple_store) begin
-            // Handled by combinational output
-        end else if (!write_AB & !write_AR & !do_TAR & !load & !store & !simple_load & !simple_store) begin
-          // Do nothing??
-        end else begin
-          _A <= 'x;
-          _B <= 'x;
-          _AR <= 'x;
+      case (cmd)
+        CmdWriteAb: begin
+          a_q <= masked_merge(new_a_i, a_q, mask_a_i);
+          b_q <= masked_merge(new_b_i, b_q, mask_b_i);
         end
-      end
+        CmdWriteAr:     ar_q <= masked_merge(new_ar_i, ar_q, mask_a_i);
+        CmdDoTar:       ar_q <= a_q;
+        CmdLoad,
+        CmdSimpleLoad: begin
+          if ($isunknown(use_a_i))  { a_q, b_q } <= 'x;
+          else if (use_a_i)         a_q <= mem_rdata_i;
+          else                      b_q <= mem_rdata_i;
+        end
+        CmdNothing,
+        CmdStore,
+        CmdSimpleStore: ;                   // No register change
+        default:        { a_q, b_q, ar_q } <= 'x;
+      endcase
     end
   end
 
